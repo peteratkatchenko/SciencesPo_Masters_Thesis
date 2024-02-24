@@ -1,8 +1,8 @@
 module masters_thesis
 
-using CSV.jl 
-using DataFrames.jl
-using Plots.jl 
+import CSV.jl 
+import DataFrames.jl
+import Plots.jl 
 
 
 
