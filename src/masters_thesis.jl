@@ -1,8 +1,19 @@
 module masters_thesis
 
+using CSV.jl 
+using DataFrames.jl
+using Plots.jl 
 
-woop() = print("I am working now!")
 
-greet() = print("Hello World!")
+
+
+
+
+
+
+
+
+
+
 
 end # module masters_thesis
