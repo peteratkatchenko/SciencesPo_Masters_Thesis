@@ -1,12 +1,13 @@
 module masters_thesis
 
-import CSV.jl 
-import DataFrames.jl
-import Plots.jl 
+import CSV
+import DataFrames
+import Plots
+import Pipe 
+import TabularDisplay
 
 
-
-
+df = DataFrame(CSV.File("ciedata.csv"))
 
 
 
