@@ -29,21 +29,87 @@ pretty_table(df_asie_u)
 # firm_patent: total firm-patent matches for all patent types 
 
 firm_patent = vcat(df_asie_i, df_asie_d, df_asie_u)
+pretty_table(firm_patent)
 
-# Identify the firm type for each observation by matching CIE observations to firm-patent observations 
-# using firm identifier
+#df contains observations from 1998-2008 inclusive; firm_patent contains observations from 1998-2009
+#Need to trim firm_patent so that it contains observations from 1998-2008
+
+summary_stats_df = describe(df[!, :year]) #1998-2008
+
+summary_stats_fp = describe(firm_patent[!, :year]) #1998-2009
+
+firm_patent = filter(row -> row.year != 2009, firm_patent) #Removing obs with year == 2009
+pretty_table(firm_patent)
+
+rename!(firm_patent, "asie_id" => "id") #Renaming ASIE id variable to 'id' in both dataframes
+
+#Checking both dataframes for missing values in the 'id','year' variables + others
+
+missing_values_df_id = sum(ismissing.(df[!, "id"])) #103,414 missing values out of 2,718,430 total values
+
+missing_values_df_year = sum(ismissing.(df[!, "year"])) #0 missing values
+
+missing_values_df_ownership = sum(ismissing.(df[!, "ownership"])) #0 missing values 
+______________________________________________________________________________________
+missing_values_fp_id = sum(ismissing.(firm_patent[!, "id"])) #151 missing values out of 876,554 total values
+
+missing_values_fp_year = sum(ismissing.(firm_patent[!, "year"])) #0 missing values 
+ 
+missing_values_fp_pt = sum(ismissing.(firm_patent[!, "patent_type"])) #0 missing values 
+
+#What patent types are most associated with firms with missing id in firm_patent
+
+filtered_fp = filter(row -> ismissing(row.id), firm_patent) #Isolating the obs with missing id: 151x25 df 
+
+unique_patent_types = unique(filtered_fp[!, "patent_type"]) #Quantity of unique patent_types: 3
+
+freq_table_fp = combine(groupby(filtered_fp, "patent_type"), nrow) #Frequency of each unique patent_type 
+    #i:66 d:39 u:46 - very small quantity of obs w/ missing values, evenly distributed 
+
+#What firm types are most associated with firms with missing id in df 
+
+filtered_df = filter(row -> ismissing(row.id), df) #Isolating the obs with missing id: 103,414x12
+
+unique_firm_types = unique(filtered_df[!, "ownership"]) #Quantity of unique firm types: 5
+
+freq_table_df = combine(groupby(filtered_df, "ownership"), nrow)
+println(freq_table_df)
+#SOE:6722 Foreign:11581 Private:33854 Collective:9216 NotID:42041
+#Out of those eliminated firms whose type is identified, most are Private 
+
+summary_stats_filtered_df = describe(filtered_df[!, "output"]) #Mean output: 97,349.67
+#Compare the mean output of eliminated firms to mean output of retained firms (in df)
+
+#Remove obs with missing values for 'id' in firm_patent 
+
+firm_patent = filter(row -> !ismissing(row.id), firm_patent) #Remove obs with missing id: 876,403x25 df 
+
+#Remove obs with missing values for 'id' in df 
+
+df = filter(row -> !ismissing(row.id), df) #Remove obs with missing id: 2,615,016x12 df 
+
+summary_stats_df = describe(df[!, "output"]) #Mean output: 85,426.51
+#Mean output of retained df firms is less than mean output of eliminated df firms
+#Possible implication: retained firms are smaller in size compared to eliminated firms 
+#Can't determine the firm type of larger eliminated firms - no firm id for matching 
+
+# Identify the firm type for each observation in firm_patent by matching dataframes
+# using firm identifier and patent application year 
+
+merged_df = leftjoin(firm_patent, df, on = [:id, :year]) #876,415x35
+
+CSV.write("merged_data.csv", merged_df) 
+
+missing_values_ownership = sum(ismissing.(merged_df[!, "ownership"])) #200,893 obs w/ missing ownership 
+
+merged_df = filter(row -> !ismissing(row.ownership), merged_df) #675,522x35 
 
 
+alt_merged_df = leftjoin(firm_patent, df, on = [:id], makeunique=true) #5,967,158x36
 
+CSV.write("alt_merged_data.csv", alt_merged_df)
 
-
-
-
-
-
-
-
-
+alt_merged_df_single = filter(row -> row.id == 625911031, alt_merged_df)
 
 
 
