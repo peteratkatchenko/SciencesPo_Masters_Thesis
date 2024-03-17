@@ -2,6 +2,9 @@ module masters_thesis
 
 using CSV
 using DataFrames
+using Distributions
+using Random 
+using Query
 using Plots
 using Pipe 
 using TabularDisplay
@@ -13,16 +16,16 @@ using PrettyTables
 # df_asie_d: matched firms with patents + CIE firm identifiers (design patents)
 # df_asie_u: matched firms with patents + CIE firm identifiers (utility patents)
 
-df = DataFrame(CSV.File("C:\\Users\\peter\\.julia\\dev\\masters_thesis\\china.data\\additional_firm_id\\ciedata_additional.csv"))
+df = CSV.read("C:\\Users\\peter\\.julia\\dev\\masters_thesis\\china.data\\data_firm_level_china_additional\\ciedata_additional.csv", DataFrame)
 pretty_table(df)
 
-df_asie_i = DataFrame(CSV.File("C:\\Users\\peter\\.julia\\dev\\masters_thesis\\china.data\\matched_chinese_firm_patent_data\\ASIE firms matched to invention patents.csv"))
+df_asie_i = CSV.read("C:\\Users\\peter\\.julia\\dev\\masters_thesis\\china.data\\matched_chinese_firm_patent_data\\ASIE firms matched to invention patents.csv", DataFrame)
 pretty_table(df_asie_i)
 
-df_asie_d = DataFrame(CSV.File("C:\\Users\\peter\\.julia\\dev\\masters_thesis\\china.data\\matched_chinese_firm_patent_data\\ASIE firms matched to design patents.csv"))
+df_asie_d = CSV.read("C:\\Users\\peter\\.julia\\dev\\masters_thesis\\china.data\\matched_chinese_firm_patent_data\\ASIE firms matched to design patents.csv", DataFrame)
 pretty_table(df_asie_d)
 
-df_asie_u = DataFrame(CSV.File("C:\\Users\\peter\\.julia\\dev\\masters_thesis\\china.data\\matched_chinese_firm_patent_data\\ASIE firms matched to utility model patents.csv"))
+df_asie_u = CSV.read("C:\\Users\\peter\\.julia\\dev\\masters_thesis\\china.data\\matched_chinese_firm_patent_data\\ASIE firms matched to utility model patents.csv", DataFrame)
 pretty_table(df_asie_u)
 
 # Vertically concatenate the matched patent dataframes to obtain a single matched firm-patent dataframe 
@@ -50,7 +53,7 @@ missing_values_df_id = sum(ismissing.(df[!, "id"])) #103,414 missing values out 
 missing_values_df_year = sum(ismissing.(df[!, "year"])) #0 missing values
 
 missing_values_df_ownership = sum(ismissing.(df[!, "ownership"])) #0 missing values 
-______________________________________________________________________________________
+###################################################################################
 missing_values_fp_id = sum(ismissing.(firm_patent[!, "id"])) #151 missing values out of 876,554 total values
 
 missing_values_fp_year = sum(ismissing.(firm_patent[!, "year"])) #0 missing values 
@@ -61,7 +64,7 @@ missing_values_fp_pt = sum(ismissing.(firm_patent[!, "patent_type"])) #0 missing
 
 filtered_fp = filter(row -> ismissing(row.id), firm_patent) #Isolating the obs with missing id: 151x25 df 
 
-unique_patent_types = unique(filtered_fp[!, "patent_type"]) #Quantity of unique patent_types: 3
+unique_patent_types = unique(filtered_fp.patent_type) #Quantity of unique patent_types: 3
 
 freq_table_fp = combine(groupby(filtered_fp, "patent_type"), nrow) #Frequency of each unique patent_type 
     #i:66 d:39 u:46 - very small quantity of obs w/ missing values, evenly distributed 
@@ -70,7 +73,7 @@ freq_table_fp = combine(groupby(filtered_fp, "patent_type"), nrow) #Frequency of
 
 filtered_df = filter(row -> ismissing(row.id), df) #Isolating the obs with missing id: 103,414x12
 
-unique_firm_types = unique(filtered_df[!, "ownership"]) #Quantity of unique firm types: 5
+unique_firm_types = unique(filtered_df.ownership) #Quantity of unique firm types: 5
 
 freq_table_df = combine(groupby(filtered_df, "ownership"), nrow)
 println(freq_table_df)
@@ -83,10 +86,12 @@ summary_stats_filtered_df = describe(filtered_df[!, "output"]) #Mean output: 97,
 #Remove obs with missing values for 'id' in firm_patent 
 
 firm_patent = filter(row -> !ismissing(row.id), firm_patent) #Remove obs with missing id: 876,403x25 df 
+#CSV.write("firm_patent.csv", firm_patent) 
 
 #Remove obs with missing values for 'id' in df 
 
 df = filter(row -> !ismissing(row.id), df) #Remove obs with missing id: 2,615,016x12 df 
+#CSV.write("df_cleaned.csv", df)
 
 summary_stats_df = describe(df[!, "output"]) #Mean output: 85,426.51
 #Mean output of retained df firms is less than mean output of eliminated df firms
@@ -96,20 +101,74 @@ summary_stats_df = describe(df[!, "output"]) #Mean output: 85,426.51
 # Identify the firm type for each observation in firm_patent by matching dataframes
 # using firm identifier and patent application year 
 
-merged_df = leftjoin(firm_patent, df, on = [:id, :year]) #876,415x35
+merged_df = leftjoin(firm_patent, df, on = [:id, :year]) #876,415x35 (+12 rows?)
+#CSV.write("merged_df.csv", merged_df)
 
-CSV.write("merged_data.csv", merged_df) 
+missing_values_mg_id = sum(ismissing.(merged_df.id)) #0 obs w/ missing id
 
-missing_values_ownership = sum(ismissing.(merged_df[!, "ownership"])) #200,893 obs w/ missing ownership 
+missing_values_mg_year = sum(ismissing.(merged_df.year)) #0 obs w/ missing year 
 
+missing_values_mg_pt = sum(ismissing.(merged_df.patent_type)) #0 obs w/ missing patent type 
+
+missing_values_mg_ownership = sum(ismissing.(merged_df.ownership)) #200,893 obs w/ missing ownership 
+        
+#If obs in merged_df are missing 'ownership', then there was no matching id in df 
+#Therefore: shouldn't be able to find obs with id in df 
+
+#Checking condition by hand with one merged_df obs 
+last_obs = last(merged_df, 1)
+
+last_obs_owner = last_obs.ownership 
+
+println(last_obs_owner) #Ownership indeed missing for last obs of merged_df 
+
+id_lastobs = last_obs.id #X02645195 
+year_lastobs = last_obs.year #2008
+
+function find_id1(dataframe, id, year)
+    for row in eachrow(dataframe)
+        if row.id == id && row.year == year 
+            return row.ownership 
+        end 
+    end 
+    return "No match found"
+end 
+
+find_id1(df, id_lastobs) #No match found 
+
+#Checking condition with algorithm for N=1000 merged_df obs 
+#Isolating merged_df obs w/o ownership
+no_owner = merged_df[675524:876415, :] #200,892 obs w/o ownership 
+sample_noowner = no_owner[sample(1:nrow(no_owner), 1000, replace=false), :]
+id_sample = sample_noowner.id 
+year_sample = sample_noowner.year
+
+function find_id2(dataframe, id_sample, year_sample) #Finding matching obs in df 
+    matches_found = String[]
+    for i in 1:length(id_sample)
+        for row in eachrow(dataframe)
+            if id_sample[i] == row.id && year_sample[i] == row.year
+            push!(matches_found, row.ownership)
+            end 
+        end 
+    end 
+    if isempty(matches_found)
+        return "No matches found"
+    else 
+        return matches_found 
+    end
+end 
+        
+matched_id = find_id2(df, id_sample, year_sample) #No matches found!  
+
+#Isolating merged_df obs w/o ownership info 
+filtered_mg = filter(row -> ismissing(row.ownership), merged_df) #200,893x35 
+
+#Removing the obs in merged_df w/o 'ownership'
 merged_df = filter(row -> !ismissing(row.ownership), merged_df) #675,522x35 
+CSV.write("merged_df.csv", merged_df)
 
-
-alt_merged_df = leftjoin(firm_patent, df, on = [:id], makeunique=true) #5,967,158x36
-
-CSV.write("alt_merged_data.csv", alt_merged_df)
-
-alt_merged_df_single = filter(row -> row.id == 625911031, alt_merged_df)
+groupby()
 
 
 
