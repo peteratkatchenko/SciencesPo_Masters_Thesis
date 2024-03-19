@@ -9,6 +9,7 @@ using Plots
 using Pipe 
 using TabularDisplay
 using PrettyTables
+using Chain
 
 # Generate a dataframe for each of the datasets needed for the analysis
 # df: CIE data with firm identifiers and firm types
@@ -134,7 +135,7 @@ function find_id1(dataframe, id, year)
     return "No match found"
 end 
 
-find_id1(df, id_lastobs) #No match found 
+find_id1(df, id_lastobs, year_lastobs) #No match found 
 
 #Checking condition with algorithm for N=1000 merged_df obs 
 #Isolating merged_df obs w/o ownership
@@ -159,16 +160,63 @@ function find_id2(dataframe, id_sample, year_sample) #Finding matching obs in df
     end
 end 
         
-matched_id = find_id2(df, id_sample, year_sample) #No matches found!  
+#matched_id = find_id2(df, id_sample, year_sample) #No matches found!  
 
 #Isolating merged_df obs w/o ownership info 
 filtered_mg = filter(row -> ismissing(row.ownership), merged_df) #200,893x35 
 
 #Removing the obs in merged_df w/o 'ownership'
 merged_df = filter(row -> !ismissing(row.ownership), merged_df) #675,522x35 
-CSV.write("merged_df.csv", merged_df)
+#CSV.write("merged_df.csv", merged_df)
 
-groupby()
+#Generating bar graph for merged_df 
+
+@chain merged_df begin 
+select(:ownership)
+ownership_df = unique(_)
+ownership = _[!, :ownership]
+end 
+
+println(ownership) #SOE;Foreign;Collective;Private
+
+inv_df = filter(row -> row.patent_type == "i", merged_df)
+grouped_inv = groupby(inv_df, :ownership)
+patents_inv = combine(grouped_inv, nrow)
+num_patents_inv = patents_inv[!, :nrow]
+
+des_df = filter(row -> row.patent_type == "d", merged_df)
+grouped_des = groupby(des_df, :ownership)
+patents_des = combine(grouped_des, nrow)
+num_patents_des = patents_des[!, :nrow]
+
+uti_df = filter(row -> row.patent_type == "u", merged_df)
+grouped_uti = groupby(uti_df, :ownership)
+patents_uti = combine(grouped_uti, nrow)
+num_patents_uti = patents_uti[!, :nrow]
+ 
+   
+
+bar_inv = bar(ownership, num_patents_inv, labels=false, xlabel="Ownership", ylabel="Number of Patents",
+title="Invention Patents",
+titlefont=font(12),
+labelfont=font(12)
+) #Invention patents
+
+bar_des = bar(ownership, num_patents_des, labels=true, xlabel="Ownership", ylabel="Number of Patents",
+title="Design Patents",
+titlefont=font(12),
+labelfont=font(12)
+) #Design patents 
+
+bar_uti = bar(ownership, num_patents_uti, labels=true, xlabel="Ownership", ylabel="Number of Patents",
+title="Utility Patents",
+titlefont=font(12),
+labelfont=font(12)
+) #Utility patents 
+
+plot(bar_inv, bar_des, bar_uti, layout=(3), legend=false)
+
+
 
 
 
