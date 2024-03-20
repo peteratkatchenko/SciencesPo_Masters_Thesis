@@ -10,6 +10,8 @@ using Pipe
 using TabularDisplay
 using PrettyTables
 using Chain
+using GLM 
+using Econometrics
 
 # Generate a dataframe for each of the datasets needed for the analysis
 # df: CIE data with firm identifiers and firm types
@@ -169,7 +171,18 @@ filtered_mg = filter(row -> ismissing(row.ownership), merged_df) #200,893x35
 merged_df = filter(row -> !ismissing(row.ownership), merged_df) #675,522x35 
 #CSV.write("merged_df.csv", merged_df)
 
-#Generating bar graph for merged_df 
+#Generating bar graphs for merged_df 
+
+@chain merged_df begin 
+groupby(:ownership)
+combine(nrow)
+select(:nrow)
+num_firms = _[!, :nrow]
+end 
+
+println(num_firms) 
+#[SOE, Foreign, Collective, Private] 
+#[157,325; 223,075; 49,137; 245,985]
 
 @chain merged_df begin 
 select(:ownership)
@@ -194,8 +207,14 @@ grouped_uti = groupby(uti_df, :ownership)
 patents_uti = combine(grouped_uti, nrow)
 num_patents_uti = patents_uti[!, :nrow]
  
-   
-
+bar_firms = bar(ownership, num_firms, 
+labels=false, 
+xlabel="Ownership",
+ylabel="Number of Patents",
+title="Types of Firms",
+titlefont=font(12),
+labelfont=font(12)
+)
 bar_inv = bar(ownership, num_patents_inv, labels=false, xlabel="Ownership", ylabel="Number of Patents",
 title="Invention Patents",
 titlefont=font(12),
@@ -216,11 +235,25 @@ labelfont=font(12)
 
 plot(bar_inv, bar_des, bar_uti, layout=(3), legend=false)
 
+#Creating binary outcomes variable (0=Design/Utility, 1=Invention)
 
+merged_df.binary_dep = ifelse.(merged_df.patent_type .== "i", 1, 0)
 
+merged_df.dummy_ind = ifelse.(merged_df.ownership .== "SOE", 1, 0) 
+#Don't forget to filter out all rows with Foreign/Collective firms before running reg
+#Otherwise, reg will count Foreign/Collective as part of Private  
 
+function ordered_dp(x)
+    if x == "i"
+        return 2
+    elseif x == "u"
+        return 1
+    elseif x == "d"
+        return 0 
+    end 
+end
 
-
+merged_df.ordered_dep = map(ordered_dp, merged_df.patent_type)
 
 
 
