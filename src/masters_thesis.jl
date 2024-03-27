@@ -4,9 +4,7 @@ using CSV
 using DataFrames
 using Distributions
 using Random 
-using Query
-using Plots
-using Pipe 
+using Plots 
 using TabularDisplay
 using PrettyTables
 using Chain
@@ -37,6 +35,26 @@ pretty_table(df_asie_u)
 firm_patent = vcat(df_asie_i, df_asie_d, df_asie_u)
 pretty_table(firm_patent)
 
+#Renaming chinese variables to English ones 
+
+rename!(firm_patent, 
+"asie_id" => "id",
+"公开公告日" => "publication_date", 
+"申请日" => "application_date", 
+"主分类号" => "primary_class",
+"分类号" => "class",
+"分案原申请号" => "divisional_application",
+"优先权" => "priority",
+"申请专利权人" => "patent_owner",
+"地址" => "address",
+"专利代理机构" => "patent_agency",
+"代理人" => "patent_agent",
+"页数" => "pages",
+"国省代码" => "state_province_code",
+"申请号" => "application_no",
+"公开号" => "grant_date")
+
+
 #df contains observations from 1998-2008 inclusive; firm_patent contains observations from 1998-2009
 #Need to trim firm_patent so that it contains observations from 1998-2008
 
@@ -47,8 +65,6 @@ summary_stats_fp = describe(firm_patent[!, :year]) #1998-2009
 firm_patent = filter(row -> row.year != 2009, firm_patent) #Removing obs with year == 2009
 pretty_table(firm_patent)
 
-rename!(firm_patent, "asie_id" => "id") #Renaming ASIE id variable to 'id' in both dataframes
-
 #Checking both dataframes for missing values in the 'id','year' variables + others
 
 missing_values_df_id = sum(ismissing.(df[!, "id"])) #103,414 missing values out of 2,718,430 total values
@@ -56,7 +72,7 @@ missing_values_df_id = sum(ismissing.(df[!, "id"])) #103,414 missing values out 
 missing_values_df_year = sum(ismissing.(df[!, "year"])) #0 missing values
 
 missing_values_df_ownership = sum(ismissing.(df[!, "ownership"])) #0 missing values 
-###################################################################################
+
 missing_values_fp_id = sum(ismissing.(firm_patent[!, "id"])) #151 missing values out of 876,554 total values
 
 missing_values_fp_year = sum(ismissing.(firm_patent[!, "year"])) #0 missing values 
@@ -101,12 +117,29 @@ summary_stats_df = describe(df[!, "output"]) #Mean output: 85,426.51
 #Possible implication: retained firms are smaller in size compared to eliminated firms 
 #Can't determine the firm type of larger eliminated firms - no firm id for matching 
 
+#Are there any 'switcher' firms in df?
+
+df_id = groupby(df, :id) #721,197 group
+
+df_id = combine(df_id, :ownership => (c -> length(unique(c))) => :uniq_ownership) #721,1997 obs
+
+df_switchers = filter(:uniq_ownership => x -> x > 1, df_id) #77,329 switchers in df 
+
+#What were the ownership types of the switcher firms?
+
+switcher_id = select(df_switchers, :id) #77,329 switcher id DataFrame
+
+switcher_id = switcher_id[!, :id] #77,329 switcher id Vector 
+
 # Identify the firm type for each observation in firm_patent by matching dataframes
-# using firm identifier and patent application year 
+# using 'id' & 'year' 
 
 merged_df = leftjoin(firm_patent, df, on = [:id, :year]) #876,415x35 (+12 rows?)
 #CSV.write("merged_df.csv", merged_df)
 
+#Creating database w/ extensive margin 
+
+#Analyzing missing values in merged_df
 missing_values_mg_id = sum(ismissing.(merged_df.id)) #0 obs w/ missing id
 
 missing_values_mg_year = sum(ismissing.(merged_df.year)) #0 obs w/ missing year 
@@ -115,7 +148,7 @@ missing_values_mg_pt = sum(ismissing.(merged_df.patent_type)) #0 obs w/ missing 
 
 missing_values_mg_ownership = sum(ismissing.(merged_df.ownership)) #200,893 obs w/ missing ownership 
         
-#If obs in merged_df are missing 'ownership', then there was no matching id in df 
+#If obs in merged_df are missing 'ownership', then there was no matching id and year in df 
 #Therefore: shouldn't be able to find obs with id in df 
 
 #Checking condition by hand with one merged_df obs 
@@ -137,7 +170,7 @@ function find_id1(dataframe, id, year)
     return "No match found"
 end 
 
-find_id1(df, id_lastobs, year_lastobs) #No match found 
+find_id1(df, id_lastobs, year_lastobs) #No match found! 
 
 #Checking condition with algorithm for N=1000 merged_df obs 
 #Isolating merged_df obs w/o ownership
@@ -170,6 +203,65 @@ filtered_mg = filter(row -> ismissing(row.ownership), merged_df) #200,893x35
 #Removing the obs in merged_df w/o 'ownership'
 merged_df = filter(row -> !ismissing(row.ownership), merged_df) #675,522x35 
 #CSV.write("merged_df.csv", merged_df)
+
+patent_filed = ones(Int, length(merged_df.id)) #876,415 ones
+merged_df.patent_filed = patent_filed 
+#Creating binary outcomes variable (0=Design/Utility, 1=Invention) 
+merged_df.binary_dep = ifelse.(merged_df.patent_type .== "i", 1, 0)
+merged_df.binary_ind = ifelse.(merged_df.ownership .== "SOE", 1, 0) 
+#Don't forget to filter out all rows with Foreign/Collective firms before running reg
+#Otherwise, reg will count Foreign/Collective as part of Private  
+function cat_dp(x)
+    if x == "i"
+        return 2
+    elseif x == "u"
+        return 1
+    elseif x == "d"
+        return 0 
+    end 
+end
+
+merged_df.cat_dep = map(cat_dp, merged_df.patent_type)
+
+
+didnt_file = antijoin(df, merged_df, on = [:id, :year]) #2,531,131
+not_filed = zeros(Int, length(didnt_file.id))
+didnt_file.patent_filed = not_filed
+didnt_file.binary_ind = ifelse.(didnt_file.ownership .== "SOE", 1, 0) 
+
+didnt_file[!, :binary_dep] = missings(nrow(didnt_file))
+didnt_file[!, :cat_dep] = missings(nrow(didnt_file))
+didnt_file[!, :fullname] = missings(nrow(didnt_file))
+didnt_file[!, :stemname] = missings(nrow(didnt_file))
+didnt_file[!, :patent_type] = missings(nrow(didnt_file))
+didnt_file[!, :serial_no] = missings(nrow(didnt_file))
+didnt_file[!, :assignee] = missings(nrow(didnt_file))
+didnt_file[!, :assignee_full] = missings(nrow(didnt_file))
+didnt_file[!, :assignee_stem] = missings(nrow(didnt_file))
+didnt_file[!, :manual_check] = missings(nrow(didnt_file))
+didnt_file[!, :true_match] = missings(nrow(didnt_file))
+didnt_file[!, :publication_date] = missings(nrow(didnt_file))
+didnt_file[!, :application_date] = missings(nrow(didnt_file))
+didnt_file[!, :primary_class] = missings(nrow(didnt_file))
+didnt_file[!, :class] = missings(nrow(didnt_file))
+didnt_file[!, :divisional_application] = missings(nrow(didnt_file))
+didnt_file[!, :priority] = missings(nrow(didnt_file))
+didnt_file[!, :patent_owner] = missings(nrow(didnt_file))
+didnt_file[!, :address] = missings(nrow(didnt_file))
+didnt_file[!, :patent_agency] = missings(nrow(didnt_file))
+didnt_file[!, :patent_agent] = missings(nrow(didnt_file))
+didnt_file[!, :pages] = missings(nrow(didnt_file))
+didnt_file[!, :state_province_code] = missings(nrow(didnt_file))
+didnt_file[!, :application_no] = missings(nrow(didnt_file))
+didnt_file[!, :grant_date] = missings(nrow(didnt_file))
+
+
+extensive_df = vcat(merged_df, didnt_file)
+#CSV.write("extensive_df.csv", extensive_df)
+
+extensive_grouped = groupby(extensive_df, :id)
+extensive_counts = combine(extensive_grouped, sum(patent_filed))
+
 
 #Generating bar graphs for merged_df 
 
@@ -235,26 +327,11 @@ labelfont=font(12)
 
 plot(bar_inv, bar_des, bar_uti, layout=(3), legend=false)
 
-#Creating binary outcomes variable (0=Design/Utility, 1=Invention)
+#Estimating probit/logit with binary dep. & ind. variables 
+merged_df1 = filter!(row -> row.ownership != "Foreign" && row.ownership != "Collective", 
+merged_df)
 
-merged_df.binary_dep = ifelse.(merged_df.patent_type .== "i", 1, 0)
-
-merged_df.dummy_ind = ifelse.(merged_df.ownership .== "SOE", 1, 0) 
-#Don't forget to filter out all rows with Foreign/Collective firms before running reg
-#Otherwise, reg will count Foreign/Collective as part of Private  
-
-function ordered_dp(x)
-    if x == "i"
-        return 2
-    elseif x == "u"
-        return 1
-    elseif x == "d"
-        return 0 
-    end 
-end
-
-merged_df.ordered_dep = map(ordered_dp, merged_df.patent_type)
-
+unique_values = unique(merged_df1.ownership) #Only SOE + Private firms 
 
 
 
