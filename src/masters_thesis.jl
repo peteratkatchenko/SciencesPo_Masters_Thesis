@@ -103,12 +103,10 @@ summary_stats_filtered_df = describe(filtered_df[!, "output"]) #Mean output: 97,
 #Compare the mean output of eliminated firms to mean output of retained firms (in df)
 
 #Remove obs with missing values for 'id' in firm_patent 
-
 firm_patent = filter(row -> !ismissing(row.id), firm_patent) #Remove obs with missing id: 876,403x25 df 
 #CSV.write("firm_patent.csv", firm_patent) 
 
 #Remove obs with missing values for 'id' in df 
-
 df = filter(row -> !ismissing(row.id), df) #Remove obs with missing id: 2,615,016x12 df 
 #CSV.write("df_cleaned.csv", df)
 
@@ -131,14 +129,11 @@ switcher_id = select(df_switchers, :id) #77,329 switcher id DataFrame
 
 switcher_id = switcher_id[!, :id] #77,329 switcher id Vector 
 
-# Identify the firm type for each observation in firm_patent by matching dataframes
-# using 'id' & 'year' 
-
+# Identify the firm type for each observation in firm_patent 
 merged_df = leftjoin(firm_patent, df, on = [:id, :year]) #876,415x35 (+12 rows?)
 #CSV.write("merged_df.csv", merged_df)
 
-#Creating database w/ extensive margin 
-
+##Creating database w/ extensive margin 
 #Analyzing missing values in merged_df
 missing_values_mg_id = sum(ismissing.(merged_df.id)) #0 obs w/ missing id
 
@@ -204,11 +199,12 @@ filtered_mg = filter(row -> ismissing(row.ownership), merged_df) #200,893x35
 merged_df = filter(row -> !ismissing(row.ownership), merged_df) #675,522x35 
 #CSV.write("merged_df.csv", merged_df)
 
+#Creating binary indicator for patent filing
 patent_filed = ones(Int, length(merged_df.id)) #876,415 ones
 merged_df.patent_filed = patent_filed 
 #Creating binary outcomes variable (0=Design/Utility, 1=Invention) 
-merged_df.binary_dep = ifelse.(merged_df.patent_type .== "i", 1, 0)
-merged_df.binary_ind = ifelse.(merged_df.ownership .== "SOE", 1, 0) 
+merged_df.binary_pat = ifelse.(merged_df.patent_type .== "i", 1, 0)
+merged_df.binary_own = ifelse.(merged_df.ownership .== "SOE", 1, 0) 
 #Don't forget to filter out all rows with Foreign/Collective firms before running reg
 #Otherwise, reg will count Foreign/Collective as part of Private  
 function cat_dp(x)
@@ -221,16 +217,16 @@ function cat_dp(x)
     end 
 end
 
-merged_df.cat_dep = map(cat_dp, merged_df.patent_type)
+merged_df.cat_pat = map(cat_dp, merged_df.patent_type)
 
 
 didnt_file = antijoin(df, merged_df, on = [:id, :year]) #2,531,131
 not_filed = zeros(Int, length(didnt_file.id))
 didnt_file.patent_filed = not_filed
-didnt_file.binary_ind = ifelse.(didnt_file.ownership .== "SOE", 1, 0) 
+didnt_file.binary_own = ifelse.(didnt_file.ownership .== "SOE", 1, 0) 
 
-didnt_file[!, :binary_dep] = missings(nrow(didnt_file))
-didnt_file[!, :cat_dep] = missings(nrow(didnt_file))
+didnt_file[!, :binary_pat] = missings(nrow(didnt_file))
+didnt_file[!, :cat_pat] = missings(nrow(didnt_file))
 didnt_file[!, :fullname] = missings(nrow(didnt_file))
 didnt_file[!, :stemname] = missings(nrow(didnt_file))
 didnt_file[!, :patent_type] = missings(nrow(didnt_file))
@@ -256,15 +252,59 @@ didnt_file[!, :application_no] = missings(nrow(didnt_file))
 didnt_file[!, :grant_date] = missings(nrow(didnt_file))
 
 
-extensive_df = vcat(merged_df, didnt_file)
+extensive_df = vcat(merged_df, didnt_file) #2,934,441x39
 #CSV.write("extensive_df.csv", extensive_df)
 
-extensive_grouped = groupby(extensive_df, :id)
-extensive_counts = combine(extensive_grouped, sum(patent_filed))
+#Deleting the Collective + Foreign firms 
+extensive_df = filter(row -> (row.ownership == "SOE" || row.ownership == "Private"), 
+extensive_df)
+#Extensive data for analysis at firm-ownership level
+extensive_grouped_1 = groupby(extensive_df, [:id, :ownership])
+extensive_counts_1 = combine(extensive_grouped_1, 
+:patent_filed => sum => :patents_count,
+:employee => mean => :mean_employee,
+:output => mean => :mean_output,
+:binary_own => mean => :binary_own)
+
+extensive_counts_1[!, :binary_own] = convert.(Int, extensive_counts_1[!, :binary_own])
+
+first(extensive_counts_1, 5) #Looks good!
+
+#Extensive data for analysis at firm-ownership-patent level
+extensive_grouped_2 = groupby(extensive_df, [:id, :ownership, :patent_type])
+extensive_counts_2 = combine(extensive_grouped_2,
+:patent_filed => sum => :patents_count,
+:employee => mean => :mean_employee,
+:output => mean => :mean_output,
+:binary_own => mean => :binary_own,
+:cat_pat => mean => :cat_pat) 
+
+extensive_counts_2[!, :binary_own] = convert.(Int, extensive_counts_2[!, :binary_own])
+extensive_counts_2[!, :cat_pat] = convert.(Union{Int, Missing}, extensive_counts_2[!, :cat_pat])
+
+first(extensive_counts_2, 5) #Looks good!
+
+#GLM with Extensive Margin + Merged Data
+
+#1: Effect of ownership structure on patent production
+glm(@formula(patents_count ~ binary_own), extensive_counts_1, Poisson(), LogLink())
+
+glm(@formula(patents_count ~ binary_own + mean_output), extensive_counts_1, Poisson(), LogLink())
+
+#2: Effect of ownership structure on patent production (by type)
+
+
+
+#3: Effect of ownership structure on patent type 
+merged_df = filter(row -> (row.ownership =="SOE" || row.ownership =="Private"), merged_df)
+
+glm(@formula(binary_pat ~ binary_own), merged_df, Bernoulli(), LogitLink())
+
+glm(@formula(binary_pat ~ binary_own + output), merged_df, Bernoulli(), LogitLink())
+
 
 
 #Generating bar graphs for merged_df 
-
 @chain merged_df begin 
 groupby(:ownership)
 combine(nrow)
