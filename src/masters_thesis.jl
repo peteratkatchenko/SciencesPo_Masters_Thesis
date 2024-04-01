@@ -10,6 +10,8 @@ using PrettyTables
 using Chain
 using GLM 
 using Econometrics
+using CategoricalArrays
+
 
 # Generate a dataframe for each of the datasets needed for the analysis
 # df: CIE data with firm identifiers and firm types
@@ -265,7 +267,6 @@ extensive_counts_1 = combine(extensive_grouped_1,
 :employee => mean => :mean_employee,
 :output => mean => :mean_output,
 :binary_own => mean => :binary_own)
-
 extensive_counts_1[!, :binary_own] = convert.(Int, extensive_counts_1[!, :binary_own])
 
 first(extensive_counts_1, 5) #Looks good!
@@ -278,31 +279,155 @@ extensive_counts_2 = combine(extensive_grouped_2,
 :output => mean => :mean_output,
 :binary_own => mean => :binary_own,
 :cat_pat => mean => :cat_pat) 
-
 extensive_counts_2[!, :binary_own] = convert.(Int, extensive_counts_2[!, :binary_own])
 extensive_counts_2[!, :cat_pat] = convert.(Union{Int, Missing}, extensive_counts_2[!, :cat_pat])
 
 first(extensive_counts_2, 5) #Looks good!
 
-#GLM with Extensive Margin + Merged Data
+#Merged df with groupings 
+merged_grouped_1 = groupby(merged_df, [:id, :ownership])
+merged_counts_1 = combine(merged_grouped_1,
+:patent_filed => sum => :patents_count,
+:employee => mean => :mean_employee,
+:output => mean => :mean_output,
+:binary_own => mean => :binary_own)
+merged_counts_1[!, :binary_own] = convert.(Int, merged_counts_1[!, :binary_own])
 
-#1: Effect of ownership structure on patent production
+
+#Merged df with groupings 
+merged_grouped_2 = groupby(merged_df, [:id, :ownership, :patent_type])
+merged_counts_2 = combine(merged_grouped_2,
+:patent_filed => sum => :patents_count,
+:employee => mean => :mean_employee,
+:output => mean => :mean_output,
+:binary_own => mean => :binary_own,
+:cat_pat => mean => :cat_pat)
+
+merged_counts_2[!, :binary_own] = convert.(Int, merged_counts_2[!, :binary_own])
+extensive_counts_2[!, :cat_pat] = convert.(Union{Int, Missing}, extensive_counts_2[!, :cat_pat])
+
+
+########################################
+#GLM with Extensive Margin + Merged Data
+########################################
+
+#1: Effect of ownership structure on patent production (extensive_counts_1)
 glm(@formula(patents_count ~ binary_own), extensive_counts_1, Poisson(), LogLink())
 
 glm(@formula(patents_count ~ binary_own + mean_output), extensive_counts_1, Poisson(), LogLink())
 
-#2: Effect of ownership structure on patent production (by type)
+#2: Effect of ownership structure on patent production (extensive_counts_2)
 
 
 
-#3: Effect of ownership structure on patent type 
+#3: Effect of ownership structure on patent type (merged_df)
 merged_df = filter(row -> (row.ownership =="SOE" || row.ownership =="Private"), merged_df)
 
-glm(@formula(binary_pat ~ binary_own), merged_df, Bernoulli(), LogitLink())
+glm(@formula(binary_pat ~ binary_own), merged_df, Bernoulli(), LogitLink()) #Significant positive effect 
 
-glm(@formula(binary_pat ~ binary_own + output), merged_df, Bernoulli(), LogitLink())
+glm(@formula(binary_pat ~ binary_own + output), merged_df, Bernoulli(), LogitLink()) #Significant positive effect 
+
+merged_df.patent_type = levels!(categorical(merged_df.patent_type, ordered = true, compress = true), ["u", "d", "i"])
+
+merged_df.patent_type = levels!(categorical(merged_df.patent_type, ordered = true, compress = true), ["d", "u", "i"])  
+
+fit(EconometricModel, @formula(patent_type ~ binary_own), merged_df)  #Ordered Response Model (Proportional Odds Logit) #Significant positive effect 
+
+fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df)  #Ordered Response Model (Proportional Odds Logit) #Returns error
+
+merged_df.patent_type = categorical(merged_df.patent_type, ordered = false, compress = true)  
+
+fit(EconometricModel, @formula(patent_type ~ binary_own), merged_df) #Nominal Response Model (Multinomial Logit, Base: d) #Positive significant effect
+
+fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df) #Nominal Response Model (Multinomial Logit, Base: d) #Positive significant effect
+
+#4: Effect of ownership structure on patent data (split merged_df)
+merged_df_A = filter(row -> row.year <= 2002, merged_df)
+merged_df_B = filter(row -> row.year > 2002, merged_df)
+
+glm(@formula(binary_pat ~ binary_own), merged_df_A, Bernoulli(), LogitLink()) #Significant positive effect 
+
+glm(@formula(binary_pat ~ binary_own + output), merged_df_A, Bernoulli(), LogitLink()) #Significant positive effect 
+
+glm(@formula(binary_pat ~ binary_own), merged_df_B, Bernoulli(), LogitLink()) #Significant positive effect 
+
+glm(@formula(binary_pat ~ binary_own + output), merged_df_B, Bernoulli(), LogitLink()) #Significant positive effect 
+
+#The positive effect of a firm being SOE on invention patenting increases over time!
+
+merged_df_A.patent_type = levels!(categorical(merged_df_A.patent_type, ordered = true, compress = true), ["u", "d", "i"])
+merged_df_B.patent_type = levels!(categorical(merged_df_B.patent_type, ordered = true, compress = true), ["u", "d", "i"])
+ 
+merged_df_A.patent_type = levels!(categorical(merged_df_A.patent_type, ordered = true, compress = true), ["d", "u", "i"])  
+merged_df_B.patent_type = levels!(categorical(merged_df_B.patent_type, ordered = true, compress = true), ["d", "u", "i"])  
+ 
+fit(EconometricModel, @formula(patent_type ~ binary_own), merged_df_A)  #Ordered Response Model (Proportional Odds Logit)
+fit(EconometricModel, @formula(patent_type ~ binary_own), merged_df_B)  #Ordered Response Model (Proportional Odds Logit) 
+ 
+fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df_A)  #Ordered Response Model (Proportional Odds Logit) #Returns error
+fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df_B)  #Ordered Response Model (Proportional Odds Logit) #Returns error
+
+merged_df_A.patent_type = categorical(merged_df_A.patent_type, ordered = false, compress = true)  
+merged_df_B.patent_type = categorical(merged_df_B.patent_type, ordered = false, compress = true)  
+
+fit(EconometricModel, @formula(patent_type ~ binary_own), merged_df_A) #Nominal Response Model (Multinomial Logit, Base: d) #Positive significant effect
+fit(EconometricModel, @formula(patent_type ~ binary_own), merged_df_B) #Nominal Response Model (Multinomial Logit, Base: d) #Positive significant effect
+
+fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df_A) #Nominal Response Model (Multinomial Logit, Base: d) #Positive significant effect
+fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df_B) #Nominal Response Model (Multinomial Logit, Base: d) #Positive significant effect
+
+#Again, the positive effect of a firm being SOE on invention patenting increases over time!
+
+merged_df.time2 = ifelse.(merged_df.year .<= 2002, 1, 0)
+function time_group3(x)
+    if x <= 2000
+        return 1 
+    elseif x >= 2001 && x <= 2004
+        return 2
+    elseif x >= 2005 && x <= 2008
+        return 3
+    end 
+end 
+merged_df.time3 = map(time_group3, merged_df.year)
+function time_group4(x)
+    if x.year <= 1999
+        return 1
+    elseif x >= 2000 && x <= 2002
+        return 2
+    elseif x >= 2003 && x <= 2005
+        return 3
+    elseif x >= 2006 && x <= 2008
+        return 4
+    end 
+end 
+merged_df.time4 = map(time_group4, merged_df.year)
+function time_group5(x)
+    if x <= 1999
+        return 1
+    elseif x >= 2000 && x <= 2001
+        return 2 
+    elseif x >= 2002 && x <= 2003
+        return 3
+    elseif x >= 2004 && x <= 2005
+        return 4
+    elseif x >=2006 && x <= 2008
+        return 5
+    end 
+end
+merged_df.time5 = map(time_group5, merged_df.year)
 
 
+
+
+
+
+
+
+
+
+#######
+#Graphs
+#######
 
 #Generating bar graphs for merged_df 
 @chain merged_df begin 
