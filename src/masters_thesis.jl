@@ -12,6 +12,12 @@ using GLM
 using Econometrics
 using CategoricalArrays
 
+include("time_separators.jl")
+import .time2 
+import .time3 
+import .time4 
+import .time5 
+
 
 # Generate a dataframe for each of the datasets needed for the analysis
 # df: CIE data with firm identifiers and firm types
@@ -260,7 +266,8 @@ extensive_df = vcat(merged_df, didnt_file) #2,934,441x39
 #Deleting the Collective + Foreign firms 
 extensive_df = filter(row -> (row.ownership == "SOE" || row.ownership == "Private"), 
 extensive_df)
-#Extensive data for analysis at firm-ownership level
+
+#All data - groups: id, ownership
 extensive_grouped_1 = groupby(extensive_df, [:id, :ownership])
 extensive_counts_1 = combine(extensive_grouped_1, 
 :patent_filed => sum => :patents_count,
@@ -269,9 +276,53 @@ extensive_counts_1 = combine(extensive_grouped_1,
 :binary_own => mean => :binary_own)
 extensive_counts_1[!, :binary_own] = convert.(Int, extensive_counts_1[!, :binary_own])
 
-first(extensive_counts_1, 5) #Looks good!
+first(extensive_counts_1, 5)
 
-#Extensive data for analysis at firm-ownership-patent level
+#All data - groups: id, ownership, time2 
+extensive_df.time2 = map(time2, extensive_df.year)
+extensive_grouped_t2 = groupby(extensive_df, [:id, :ownership, :time2])
+extensive_counts_t2 = combine(extensive_grouped_t2,
+:patent_filed => sum => :patents_count,
+:employee => mean => :mean_employee,
+:output => mean => :mean_output,
+:binary_own => mean => :binary_own 
+)
+first(extensive_counts_t2, 5)
+
+#All data - groups: id, ownership, time3 
+extensive_df.time3 = map(time3, extensive_df.year)
+extensive_grouped_t3 = groupby(extensive_df, [:id, :ownership, :time3])
+extensive_counts_t3 = combine(extensive_grouped_t3,
+:patent_filed => sum => :patents_count,
+:employee => mean => :mean_employee,
+:output => mean => :mean_output,
+:binary_own => mean => :binary_own 
+)
+first(extensive_counts_t3, 5)
+
+#All data - groups: id, ownership, time4 
+extensive_df.time4 = map(time4, extensive_df.year)
+extensive_grouped_t4 = groupby(extensive_df, [:id, :ownership, :time4])
+extensive_counts_t4 = combine(extensive_grouped_t4,
+:patent_filed => sum => :patents_count,
+:employee => mean => :mean_employee,
+:output => mean => :mean_output,
+:binary_own => mean => :binary_own 
+)
+first(extensive_counts_t4, 5)
+
+#All data - groups: id, ownership, time5 
+extensive_df.time5 = map(time5, extensive_df.year)
+extensive_grouped_t5 = groupby(extensive_df, [:id, :ownership, :time5])
+extensive_counts_t5 = combine(extensive_grouped_t5,
+:patent_filed => sum => :patents_count,
+:employee => mean => :mean_employee,
+:output => mean => :mean_output,
+:binary_own => mean => :binary_own 
+)
+first(extensive_counts_t5, 5)
+
+#All data - groups: id, ownership, patent_type
 extensive_grouped_2 = groupby(extensive_df, [:id, :ownership, :patent_type])
 extensive_counts_2 = combine(extensive_grouped_2,
 :patent_filed => sum => :patents_count,
@@ -281,8 +332,65 @@ extensive_counts_2 = combine(extensive_grouped_2,
 :cat_pat => mean => :cat_pat) 
 extensive_counts_2[!, :binary_own] = convert.(Int, extensive_counts_2[!, :binary_own])
 extensive_counts_2[!, :cat_pat] = convert.(Union{Int, Missing}, extensive_counts_2[!, :cat_pat])
+extensive_counts_2.cat_pat = categorical(extensive_counts_2.cat_pat, ordered = false, compress = true)
+extensive_counts_2.cat_pat = categorical(extensive_counts_2.cat_pat, ordered = true, compress = true)
 
-first(extensive_counts_2, 5) #Looks good!
+#All data - groups: id, ownership, patent_type, time2 
+extensive_grouped_t2! = groupby(extensive_df, [:id, :ownership, :patent_type, :time2])
+extensive_counts_t2! = combine(extensive_grouped_t2!,
+:patent_filed => sum => :patents_count,
+:employee => mean => :mean_employee,
+:output => mean => :mean_output,
+:binary_own => mean => :binary_own,
+:cat_pat => mean => :cat_pat) 
+extensive_counts_t2![!, :binary_own] = convert.(Int, extensive_counts_t2![!, :binary_own])
+extensive_counts_t2![!, :cat_pat] = convert.(Union{Int, Missing}, extensive_counts_t2![!, :cat_pat])
+extensive_counts_t2!.cat_pat = categorical(extensive_counts_t2!.cat_pat, ordered = false, compress = true)
+extensive_counts_t2!.cat_pat = categorical(extensive_counts_t2!.cat_pat, ordered = true, compress = true)
+
+
+
+#All data - groups: id, ownership, patent_type, time3
+extensive_grouped_t3! = groupby(extensive_df, [:id, :ownership, :patent_type, :time3])
+extensive_counts_t3! = combine(extensive_grouped_t3!,
+:patent_filed => sum => :patents_count,
+:employee => mean => :mean_employee,
+:output => mean => :mean_output,
+:binary_own => mean => :binary_own,
+:cat_pat => mean => :cat_pat) 
+extensive_counts_t3![!, :binary_own] = convert.(Int, extensive_counts_t3![!, :binary_own])
+extensive_counts_t3![!, :cat_pat] = convert.(Union{Int, Missing}, extensive_counts_t3![!, :cat_pat])
+extensive_counts_t3!.cat_pat = categorical(extensive_counts_t3!.cat_pat, ordered = false, compress = true)
+extensive_counts_t3!.cat_pat = categorical(extensive_counts_t3!.cat_pat, ordered = true, compress = true)
+
+
+#All data - groups: id, ownership, patent_type, time4
+extensive_grouped_t4! = groupby(extensive_df, [:id, :ownership, :patent_type, :time4])
+extensive_counts_t4! = combine(extensive_grouped_t4!,
+:patent_filed => sum => :patents_count,
+:employee => mean => :mean_employee,
+:output => mean => :mean_output,
+:binary_own => mean => :binary_own,
+:cat_pat => mean => :cat_pat) 
+extensive_counts_t4![!, :binary_own] = convert.(Int, extensive_counts_t4![!, :binary_own])
+extensive_counts_t4![!, :cat_pat] = convert.(Union{Int, Missing}, extensive_counts_t4![!, :cat_pat])
+extensive_counts_t4!.cat_pat = categorical(extensive_counts_t4!.cat_pat, ordered = false, compress = true)
+extensive_counts_t4!.cat_pat = categorical(extensive_counts_t4!.cat_pat, ordered = true, compress = true)
+
+
+#All data - groups: id, ownership, patent_type, time5
+extensive_grouped_t5! = groupby(extensive_df, [:id, :ownership, :patent_type, :time5])
+extensive_counts_t5! = combine(extensive_grouped_t5!,
+:patent_filed => sum => :patents_count,
+:employee => mean => :mean_employee,
+:output => mean => :mean_output,
+:binary_own => mean => :binary_own,
+:cat_pat => mean => :cat_pat) 
+extensive_counts_t5![!, :binary_own] = convert.(Int, extensive_counts_t5![!, :binary_own])
+extensive_counts_t5![!, :cat_pat] = convert.(Union{Int, Missing}, extensive_counts_t5![!, :cat_pat])
+extensive_counts_t5!.cat_pat = categorical(extensive_counts_t5!.cat_pat, ordered = false, compress = true)
+extensive_counts_t5!.cat_pat = categorical(extensive_counts_t5!.cat_pat, ordered = true, compress = true)
+
 
 #Merged df with groupings 
 merged_grouped_1 = groupby(merged_df, [:id, :ownership])
@@ -293,7 +401,6 @@ merged_counts_1 = combine(merged_grouped_1,
 :binary_own => mean => :binary_own)
 merged_counts_1[!, :binary_own] = convert.(Int, merged_counts_1[!, :binary_own])
 
-
 #Merged df with groupings 
 merged_grouped_2 = groupby(merged_df, [:id, :ownership, :patent_type])
 merged_counts_2 = combine(merged_grouped_2,
@@ -302,53 +409,272 @@ merged_counts_2 = combine(merged_grouped_2,
 :output => mean => :mean_output,
 :binary_own => mean => :binary_own,
 :cat_pat => mean => :cat_pat)
-
 merged_counts_2[!, :binary_own] = convert.(Int, merged_counts_2[!, :binary_own])
-extensive_counts_2[!, :cat_pat] = convert.(Union{Int, Missing}, extensive_counts_2[!, :cat_pat])
 
 
-########################################
-#GLM with Extensive Margin + Merged Data
-########################################
+#########################################
+# GLM with Extensive Margin + Merged Data
+#########################################
 
-#1: Effect of ownership structure on patent quantity (extensive_counts_1)
+#1.1: Ownership => Overall Patent Count (extensive_counts_1)
 glm(@formula(patents_count ~ binary_own), extensive_counts_1, Poisson(), LogLink())
-
+ 
 glm(@formula(patents_count ~ binary_own + mean_output), extensive_counts_1, Poisson(), LogLink())
+ 
+#1.2: Ownership => Overall Patent Count over Time w/o Controls 
+for i in groupby(extensive_counts_t2, :time2)
+    result_i = glm(@formula(patents_count ~ binary_own), i, Poisson(), LogLink()) 
+    println(result_i)
+end 
 
-#2: Effect of ownership structure on patent quantity (extensive_counts_2)
+for i in groupby(extensive_counts_t3, :time3)
+    result_i = glm(@formula(patents_count ~ binary_own), i, Poisson(), LogLink())
+    println(result_i)
+end 
 
+for i in groupby(extensive_counts_t4, :time4)
+    result_i = glm(@formula(patents_count ~ binary_own), i, Poisson(), LogLink())
+    println(result_i)
+end 
+
+for i in groupby(extensive_counts_t5, :time5)
+    result_i = glm(@formula(patents_count ~ binary_own), i, Poisson(), LogLink())
+    println(result_i)
+end
+
+#1.3 Ownership => Overall Patent Count w/ Controls 
+for i in groupby(extensive_counts_t2, :time2)
+    result_i = glm(@formula(patents_count ~ binary_own + mean_output), i, Poisson(), LogLink()) 
+    println(result_i)
+end 
+
+for i in groupby(extensive_counts_t3, :time3)
+    result_i = glm(@formula(patents_count ~ binary_own + mean_output), i, Poisson(), LogLink())
+    println(result_i)
+end 
+
+for i in groupby(extensive_counts_t4, :time4)
+    result_i = glm(@formula(patents_count ~ binary_own + mean_output), i, Poisson(), LogLink())
+    println(result_i)
+end 
+
+for i in groupby(extensive_counts_t5, :time5)
+    result_i = glm(@formula(patents_count ~ binary_own + mean_output), i, Poisson(), LogLink())
+    println(result_i)
+end
+
+#2.1: Ownership => Specific Patent Count
 glm(@formula(patents_count ~ binary_own), extensive_counts_2, Poisson(), LogLink())
+ 
+glm(@formula(patents_count ~ binary_own + mean_output), extensive_counts_2, Poisson(), LogLink())
+ 
+glm(@formula(patents_count ~ binary_own + binary_own*cat_pat), extensive_counts_2, Poisson(), LogLink())
+ 
+glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_output), extensive_counts_2, Poisson(), LogLink())
+ 
+#2.2: Ownership => Specific Patent Count over Time w/o Controls
+for i in groupby(extensive_counts_t2!, :time2)
+   result_i = glm(@formula(patents_count ~ binary_own), i, Poisson(), LogLink())
+   println(result_i)
+end 
 
-glm(@formula(patents_count ~ binary_own + mean_output), extensive_counts_2, Poisson, LogLink())
+for i in groupby(extensive_counts_t3!, :time3)
+    result_i = glm(@formula(patents_count ~ binary_own), i, Poisson(), LogLink())
+    println(result_i)
+end 
+ 
+for i in groupby(extensive_counts_t4!, :time4)
+    result_i = glm(@formula(patents_count ~ binary_own), i, Poisson(), LogLink())
+    println(result_i)
+end
 
-#3: Effect of ownership structure on patent type (merged_df)
+for i in groupby(extensive_counts_t5!, :time5)
+    result_i = glm(@formula(patents_count ~ binary_own), i, Poisson(), LogLink()) 
+    println(result_i)
+end
 
+#2.3: Ownership => Specific Patent Count over Time w/ Controls
+for i in groupby(extensive_counts_t2!, :time2)
+    result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat), i, Poisson(), LogLink())
+    println(result_i)
+ end 
+ 
+ for i in groupby(extensive_counts_t3!, :time3)
+     result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat), i, Poisson(), LogLink())
+     println(result_i)
+ end 
+  
+ for i in groupby(extensive_counts_t4!, :time4)
+     result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat), i, Poisson(), LogLink())
+     println(result_i)
+ end
+ 
+ for i in groupby(extensive_counts_t5!, :time5)
+     result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat), i, Poisson(), LogLink()) 
+     println(result_i)
+ end
+
+ #2.4: Ownership => Specific Patent Count over Time w/ More Controls
+ for i in groupby(extensive_counts_t2!, :time2)
+    result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_output), i, Poisson(), LogLink())
+    println(result_i)
+ end 
+ 
+ for i in groupby(extensive_counts_t3!, :time3)
+     result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_output), i, Poisson(), LogLink())
+     println(result_i)
+ end 
+  
+ for i in groupby(extensive_counts_t4!, :time4)
+     result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_output), i, Poisson(), LogLink())
+     println(result_i)
+ end
+ 
+ for i in groupby(extensive_counts_t5!, :time5)
+     result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_output), i, Poisson(), LogLink()) 
+     println(result_i)
+ end
+
+#3.1: Ownership => Type of Patent Produced (merged_df, binary dep var)
 merged_df = filter(row -> (row.ownership =="SOE" || row.ownership =="Private"), merged_df)
-
-#Merged dataframe - Binary Dep Var
-glm(@formula(binary_pat ~ binary_own), merged_df, Bernoulli(), LogitLink()) #Significant positive effect 
-
-glm(@formula(binary_pat ~ binary_own + output), merged_df, Bernoulli(), LogitLink()) #Significant positive effect 
-
-#Merged dataframe - Ordered Categorical Dep Var 
+ 
+glm(@formula(binary_pat ~ binary_own), merged_df, Bernoulli(), LogitLink()) 
+ 
+glm(@formula(binary_pat ~ binary_own + output), merged_df, Bernoulli(), LogitLink())
+ 
+#3.2 Ownership => Type of Patent Produced (merged_df, ordered response model - proportional odds logit) 
 merged_df.patent_type = levels!(categorical(merged_df.patent_type, ordered = true, compress = true), ["d", "u", "i"])  
 merged_df.patent_type = levels!(categorical(merged_df.patent_type, ordered = true, compress = true), ["u", "d", "i"])
 
-fit(EconometricModel, @formula(patent_type ~ binary_own), merged_df)  #Ordered Response Model (Proportional Odds Logit) #Significant positive effect 
-
-fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df)  #Ordered Response Model (Proportional Odds Logit) #Returns error
-
-#Merged dataframe - Unordered Categorical Dep Var 
+fit(EconometricModel, @formula(patent_type ~ binary_own), merged_df)  
+ 
+#3.3 Ownership => Type of Patent Produced (merged_df, nominal response model - multinomial logit, base d) 
 merged_df.patent_type = categorical(merged_df.patent_type, ordered = false, compress = true)  
 
-fit(EconometricModel, @formula(patent_type ~ binary_own), merged_df) #Nominal Response Model (Multinomial Logit, Base: d) #Positive significant effect
+fit(EconometricModel, @formula(patent_type ~ binary_own), merged_df) 
+ 
+fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df) 
+ 
+#3.4: Ownership => Type of Patent Produced over Time (merged_df, binary dep var)
+merged_df.time2 = map(time2, merged_df.year)
+for i in groupby(merged_df, :time2)
+    result_i = glm(@formula(binary_pat ~ binary_own), i, Bernoulli(), LogitLink())  
+    println(result_i)
+end 
 
-fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df) #Nominal Response Model (Multinomial Logit, Base: d) #Positive significant effect
+merged_df.time3 = map(time3, merged_df.year)
+for i in groupby(merged_df, :time3)
+    result_i = glm(@formula(binary_pat ~ binary_own), i, Bernoulli(), LogitLink())
+    println(result_i)
+end 
 
-#4: Effect of ownership structure on patent type over time 
+merged_df.time4 = map(time4, merged_df.year)
+for i in groupby(merged_df, :time4)
+    result_i = glm(@formula(binary_pat ~ binary_own), i, Bernoulli(), LogitLink()) 
+    println(result_i)
+end 
 
-#Merged df - Binary Dep Var - Multiple Periods
+merged_df.time5 = map(time5, merged_df.year)
+for i in groupby(merged_df, :time5)
+    result_i = glm(@formula(binary_pat ~ binary_own), i, Bernoulli(), LogitLink())
+    println(result_i)
+end 
+
+#3.5: Ownership => Type of Patent Produced over Time (merged_df, binary dep var + controls)
+for i in groupby(merged_df, :time2)
+    result_i = glm(@formula(binary_pat ~ binary_own + output), i, Bernoulli(), LogitLink())
+    println(result_i)
+end 
+
+for i in groupby(merged_df, :time3)
+    result_i = glm(@formula(binary_pat ~ binary_own + output), i, Bernoulli(), LogitLink())  
+    println(result_i)
+end 
+
+for i in groupby(merged_df, :time4)
+    result_i = glm(@formula(binary_pat ~ binary_own + output), i, Bernoulli(), LogitLink()) 
+    println(result_i)
+end 
+
+for i in groupby(merged_df, :time5)
+    result_i = glm(@formula(binary_pat ~ binary_own + output), i, Bernoulli(), LogitLink())
+    println(result_i)
+end 
+
+#3.6: Ownership => Type of Patent Produced over Time (merged_df, ordered dep var - proportional odds logit)
+merged_df.patent_type = levels!(categorical(merged_df.patent_type, ordered = true, compress = true), ["d", "u", "i"])  
+merged_df.patent_type = levels!(categorical(merged_df.patent_type, ordered = true, compress = true), ["u", "d", "i"])
+
+for i in groupby(merged_df, :time2)
+    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own), i)  
+    println(result_i)
+end 
+
+for i in groupby(merged_df, :time3)
+    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own), i)   
+    println(result_i)
+end 
+
+for i in groupby(merged_df, :time4)
+    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own), i)  
+    println(result_i)
+end 
+
+for i in groupby(merged_df, :time5)
+    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own), i)  
+    println(result_i)
+end 
+
+#3.6: Ownership => Type of Patent Produced over Time (merged_df, ordered dep var + controls)
+#N/A
+
+#3.7: Ownership => Type of Patent Produced over Time (merged_df, unordered dep var - nominal response model)
+merged_df.patent_type = categorical(merged_df.patent_type, ordered = false, compress = true)  
+
+for i in groupby(merged_df, :time2)
+    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own), merged_df) 
+    println(result_i)
+end 
+
+for i in groupby(merged_df, :time3)
+    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own), i)   
+    println(result_i)
+end 
+
+for i in groupby(merged_df, :time4)
+    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own), i)   
+    println(result_i)
+end 
+
+for i in groupby(merged_df, :time5)
+    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own), i)   
+    println(result_i)
+end 
+
+#3.8: Ownership => Type of Patent Produced over Time (merged_df, unordered dep var + controls)
+merged_df.patent_type = categorical(merged_df.patent_type, ordered = false, compress = true)  
+
+for i in groupby(merged_df, time2)
+result_i = fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df) 
+println(result_i)
+end
+
+for i in groupby(merged_df, time3)
+    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df) 
+    println(result_i)
+end
+
+for i in groupby(merged_df, time4)
+    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df) 
+    println(result_i)
+end
+    
+for i in groupby(merged_df, time5)
+    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df) 
+    println(result_i)
+end
+    
+
 function time2(x::Int64)
     if x <= 2002
         return 0 
@@ -356,8 +682,6 @@ function time2(x::Int64)
         return 1
     end 
 end 
-
-merged_df.time2 = map(time2, merged_df.year)
 
 function time3(x::Int64)
     if x <= 2000
@@ -368,7 +692,6 @@ function time3(x::Int64)
         return 2
     end 
 end 
-merged_df.time3 = map(time3, merged_df.year)
 
 function time4(x::Int64)
     if x <= 1999
@@ -381,7 +704,6 @@ function time4(x::Int64)
         return 3
     end 
 end 
-merged_df.time4 = map(time4, merged_df.year)
 
 function time5(x::Int64)
     if x <= 1999
@@ -396,100 +718,6 @@ function time5(x::Int64)
         return 4
     end 
 end 
-merged_df.time5 = map(time5, merged_df.year)
-
-
-
-
-for i in groupby(merged_df, :time2)
-    result_i = glm(@formula(binary_pat ~ binary_own), i, Bernoulli(), LogitLink()) #Significant positive effect 
-    println(result_i)
-end 
-
-for i in groupby(merged_df, :time2)
-    result_i = glm(@formula(binary_pat ~ binary_own + output), i, Bernoulli(), LogitLink()) #Significant positive effect 
-    println(result_i)
-end 
-
-
-for i in groupby(merged_df, :time3)
-    result_i = glm(@formula(binary_pat ~ binary_own), i, Bernoulli(), LogitLink()) #Significant positive effect 
-    println(result_i)
-end 
-
-for i in groupby(merged_df, :time3)
-    result_i = glm(@formula(binary_pat ~ binary_own + output), i, Bernoulli(), LogitLink()) #Significant positive effect 
-    println(result_i)
-end 
-
-
-for i in groupby(merged_df, :time4)
-    result_i = glm(@formula(binary_pat ~ binary_own), i, Bernoulli(), LogitLink()) #Significant positive effect 
-    println(result_i)
-end 
-
-for i in groupby(merged_df, :time4)
-    result_i = glm(@formula(binary_pat ~ binary_own + output), i, Bernoulli(), LogitLink()) #Significant positive effect 
-    println(result_i)
-end 
-
-
-for i in groupby(merged_df, :time5)
-    result_i = glm(@formula(binary_pat ~ binary_own), i, Bernoulli(), LogitLink()) #Significant positive effect 
-    println(result_i)
-end 
-
-for i in groupby(merged_df, :time5)
-    result_i = glm(@formula(binary_pat ~ binary_own + output), i, Bernoulli(), LogitLink()) #Significant positive effect 
-    println(result_i)
-end 
-
-#Merged dataframe - Ordered Categorical Dep Var - Multiple Periods 
-
-merged_df.patent_type = levels!(categorical(merged_df.patent_type, ordered = true, compress = true), ["d", "u", "i"])  
-merged_df.patent_type = levels!(categorical(merged_df.patent_type, ordered = true, compress = true), ["u", "d", "i"])
-
-for i in groupby(merged_df, :time2)
-    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own), i)  #Ordered Response Model (Proportional Odds Logit) #Significant positive effect 
-    println(result_i)
-end 
-
-for i in groupby(merged_df, :time2)
-    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df)  #Ordered Response Model (Proportional Odds Logit) #Returns error
-    println(result_i)
-end 
-
-for i in groupby(merged_df, :time3)
-    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own), i)  #Ordered Response Model (Proportional Odds Logit) #Significant positive effect 
-    println(result_i)
-end 
-
-for i in groupby(merged_df, :time3)
-    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df)  #Ordered Response Model (Proportional Odds Logit) #Returns error
-    println(result_i)
-end 
-
-
-
-
-
-#Merged df - Ordered Categorical Dep Var 
-
-#Merged df - Unordered Categorical Dep Var 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #######
 #Graphs
@@ -563,23 +791,5 @@ merged_df1 = filter!(row -> row.ownership != "Foreign" && row.ownership != "Coll
 merged_df)
 
 unique_values = unique(merged_df1.ownership) #Only SOE + Private firms 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 end # module masters_thesis
