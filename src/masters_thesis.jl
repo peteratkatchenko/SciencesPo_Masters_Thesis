@@ -13,10 +13,10 @@ using Econometrics
 using CategoricalArrays
 
 include("time_separators.jl")
-import .time2 
-import .time3 
-import .time4 
-import .time5 
+import .time_separators: time2
+import .time_separators: time3 
+import .time_separators: time4 
+import .time_separators: time5
 
 
 # Generate a dataframe for each of the datasets needed for the analysis
@@ -261,7 +261,7 @@ didnt_file[!, :grant_date] = missings(nrow(didnt_file))
 
 
 extensive_df = vcat(merged_df, didnt_file) #2,934,441x39
-#CSV.write("extensive_df.csv", extensive_df)
+CSV.write("extensive_df.csv", extensive_df)
 
 #Deleting the Collective + Foreign firms 
 extensive_df = filter(row -> (row.ownership == "SOE" || row.ownership == "Private"), 
@@ -654,70 +654,26 @@ end
 #3.8: Ownership => Type of Patent Produced over Time (merged_df, unordered dep var + controls)
 merged_df.patent_type = categorical(merged_df.patent_type, ordered = false, compress = true)  
 
-for i in groupby(merged_df, time2)
+for i in groupby(merged_df, :time2)
 result_i = fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df) 
 println(result_i)
 end
 
-for i in groupby(merged_df, time3)
+for i in groupby(merged_df, :time3)
     result_i = fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df) 
     println(result_i)
 end
 
-for i in groupby(merged_df, time4)
-    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df) 
-    println(result_i)
-end
-    
-for i in groupby(merged_df, time5)
+for i in groupby(merged_df, :time4)
     result_i = fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df) 
     println(result_i)
 end
     
-
-function time2(x::Int64)
-    if x <= 2002
-        return 0 
-    else 
-        return 1
-    end 
-end 
-
-function time3(x::Int64)
-    if x <= 2000
-        return 0 
-    elseif x >= 2001 && x <= 2004
-        return 1
-    elseif x >= 2005 && x <= 2008
-        return 2
-    end 
-end 
-
-function time4(x::Int64)
-    if x <= 1999
-        return 0 
-    elseif x >= 2000 && x <= 2002
-        return 1
-    elseif x >= 2003 && x <= 2005
-        return 2
-    elseif x >= 2006 && x <= 2008
-        return 3
-    end 
-end 
-
-function time5(x::Int64)
-    if x <= 1999
-        return 0 
-    elseif x >= 2000 && x <= 2001
-        return 1
-    elseif x >= 2002 && x <= 2003
-        return 2
-    elseif x >= 2004 && x <= 2005
-        return 3
-    elseif x >= 2006 && x <= 2008
-        return 4
-    end 
-end 
+for i in groupby(merged_df, :time5)
+    result_i = fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df) 
+    println(result_i)
+end
+    
 
 #######
 #Graphs

@@ -1,5 +1,10 @@
 module time_separators
 
+export time2 
+export time3 
+export time4
+export time5 
+
 function time2(x::Int64)
     if x <= 2002
         return 0 
@@ -43,7 +48,5 @@ function time5(x::Int64)
         return 4
     end 
 end 
-
-
 
 end #End of module 
