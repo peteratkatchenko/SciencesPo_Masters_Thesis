@@ -1,5 +1,3 @@
-module masters_thesis   
-
 using CSV
 using DataFrames
 using Distributions
@@ -13,6 +11,7 @@ using Econometrics
 using CategoricalArrays
 using RegressionTables
 using GLFixedEffectModels
+using RCall
 
 include("time_separators.jl")
 import .time_separators: time2
@@ -270,62 +269,77 @@ extensive_df = filter(row -> (row.ownership == "SOE" || row.ownership == "Privat
 extensive_df)
 
 #All data - groups: id, ownership
-extensive_grouped_1 = groupby(extensive_df, [:id, :ownership])
+extensive_grouped_1 = groupby(extensive_df, [:id, :ownership, :county, :ind4])
 extensive_counts_1 = combine(extensive_grouped_1, 
 :patent_filed => sum => :patents_count,
 :employee => mean => :mean_employee,
 :output => mean => :mean_output,
 :binary_own => mean => :binary_own)
 extensive_counts_1[!, :binary_own] = convert.(Int, extensive_counts_1[!, :binary_own])
+extensive_counts_1.id = categorical(extensive_counts_1.id, ordered=false, compress=true)
+extensive_counts_1.county = categorical(extensive_counts_1.county, ordered=false, compress=true)
+extensive_counts_1.ind4 = categorical(extensive_counts_1.ind4, ordered=false, compress=true)
 
-first(extensive_counts_1, 5)
+CSV.write("extensive_counts_1.csv", extensive_counts_1)
 
 #All data - groups: id, ownership, time2 
 extensive_df.time2 = map(time2, extensive_df.year)
-extensive_grouped_t2 = groupby(extensive_df, [:id, :ownership, :time2])
+extensive_grouped_t2 = groupby(extensive_df, [:id, :ownership, :county, :ind4, :time2])
 extensive_counts_t2 = combine(extensive_grouped_t2,
 :patent_filed => sum => :patents_count,
 :employee => mean => :mean_employee,
 :output => mean => :mean_output,
-:binary_own => mean => :binary_own 
-)
+:binary_own => mean => :binary_own)
+extensive_counts_t2.id = categorical(extensive_counts_t2.id, ordered=false, compress=true)
+extensive_counts_t2.county = categorical(extensive_counts_t2.county, ordered=false, compress=true)
+extensive_counts_t2.ind4 = categorical(extensive_counts_t2.ind4, ordered=false, compress=true)
+
 first(extensive_counts_t2, 5)
 
 #All data - groups: id, ownership, time3 
 extensive_df.time3 = map(time3, extensive_df.year)
-extensive_grouped_t3 = groupby(extensive_df, [:id, :ownership, :time3])
+extensive_grouped_t3 = groupby(extensive_df, [:id, :ownership, :county, :ind4, :time3])
 extensive_counts_t3 = combine(extensive_grouped_t3,
 :patent_filed => sum => :patents_count,
 :employee => mean => :mean_employee,
 :output => mean => :mean_output,
-:binary_own => mean => :binary_own 
-)
+:binary_own => mean => :binary_own)
+extensive_counts_t3.id = categorical(extensive_counts_t3.id, ordered=false, compress=true)
+extensive_counts_t3.county = categorical(extensive_counts_t3.county, ordered=false, compress=true)
+extensive_counts_t3.ind4 = categorical(extensive_counts_t3.ind4, ordered=false, compress=true)
+
 first(extensive_counts_t3, 5)
 
 #All data - groups: id, ownership, time4 
 extensive_df.time4 = map(time4, extensive_df.year)
-extensive_grouped_t4 = groupby(extensive_df, [:id, :ownership, :time4])
+extensive_grouped_t4 = groupby(extensive_df, [:id, :ownership, :county, :ind4, :time4])
 extensive_counts_t4 = combine(extensive_grouped_t4,
 :patent_filed => sum => :patents_count,
 :employee => mean => :mean_employee,
 :output => mean => :mean_output,
-:binary_own => mean => :binary_own 
-)
+:binary_own => mean => :binary_own)
+extensive_counts_t4.id = categorical(extensive_counts_t4.id, ordered=false, compress=true)
+extensive_counts_t4.county = categorical(extensive_counts_t4.county, ordered=false, compress=true)
+extensive_counts_t4.ind4 = categorical(extensive_counts_t4.ind4, ordered=false, compress=true)
+
 first(extensive_counts_t4, 5)
 
 #All data - groups: id, ownership, time5 
 extensive_df.time5 = map(time5, extensive_df.year)
-extensive_grouped_t5 = groupby(extensive_df, [:id, :ownership, :time5])
+extensive_grouped_t5 = groupby(extensive_df, [:id, :ownership, :county, :ind4, :time5])
 extensive_counts_t5 = combine(extensive_grouped_t5,
 :patent_filed => sum => :patents_count,
 :employee => mean => :mean_employee,
 :output => mean => :mean_output,
-:binary_own => mean => :binary_own 
-)
+:binary_own => mean => :binary_own)
+extensive_counts_t5.id = categorical(extensive_counts_t5.id, ordered=false, compress=true)
+extensive_counts_t5.county = categorical(extensive_counts_t5.county, ordered=false, compress=true)
+extensive_counts_t5.ind4 = categorical(extensive_counts_t5.ind4, ordered=false, compress=true)
+
 first(extensive_counts_t5, 5)
 
 #All data - groups: id, ownership, patent_type
-extensive_grouped_2 = groupby(extensive_df, [:id, :ownership, :patent_type])
+extensive_grouped_2 = groupby(extensive_df, [:id, :ownership, :patent_type, :county, :ind4])
 extensive_counts_2 = combine(extensive_grouped_2,
 :patent_filed => sum => :patents_count,
 :employee => mean => :mean_employee,
@@ -336,9 +350,14 @@ extensive_counts_2[!, :binary_own] = convert.(Int, extensive_counts_2[!, :binary
 extensive_counts_2[!, :cat_pat] = convert.(Union{Int, Missing}, extensive_counts_2[!, :cat_pat])
 extensive_counts_2.cat_pat = categorical(extensive_counts_2.cat_pat, ordered = false, compress = true)
 extensive_counts_2.cat_pat = categorical(extensive_counts_2.cat_pat, ordered = true, compress = true)
+extensive_counts_2.id = categorical(extensive_counts_2.id, ordered=false, compress=true)
+extensive_counts_2.county = categorical(extensive_counts_2.county, ordered=false, compress=true)
+extensive_counts_2.ind4 = categorical(extensive_counts_2.ind4, ordered=false, compress=true)
+
+
 
 #All data - groups: id, ownership, patent_type, time2 
-extensive_grouped_t2! = groupby(extensive_df, [:id, :ownership, :patent_type, :time2])
+extensive_grouped_t2! = groupby(extensive_df, [:id, :ownership, :patent_type, :county, :ind4, :time2])
 extensive_counts_t2! = combine(extensive_grouped_t2!,
 :patent_filed => sum => :patents_count,
 :employee => mean => :mean_employee,
@@ -349,11 +368,14 @@ extensive_counts_t2![!, :binary_own] = convert.(Int, extensive_counts_t2![!, :bi
 extensive_counts_t2![!, :cat_pat] = convert.(Union{Int, Missing}, extensive_counts_t2![!, :cat_pat])
 extensive_counts_t2!.cat_pat = categorical(extensive_counts_t2!.cat_pat, ordered = false, compress = true)
 extensive_counts_t2!.cat_pat = categorical(extensive_counts_t2!.cat_pat, ordered = true, compress = true)
+extensive_counts_t2!.id = categorical(extensive_counts_t2!.id, ordered=false, compress=true)
+extensive_counts_t2!.county = categorical(extensive_counts_t2!.county, ordered=false, compress=true)
+extensive_counts_t2!.ind4 = categorical(extensive_counts_t2!.ind4, ordered=false, compress=true)
 
 
 
 #All data - groups: id, ownership, patent_type, time3
-extensive_grouped_t3! = groupby(extensive_df, [:id, :ownership, :patent_type, :time3])
+extensive_grouped_t3! = groupby(extensive_df, [:id, :ownership, :patent_type, :county, :ind4, :time3])
 extensive_counts_t3! = combine(extensive_grouped_t3!,
 :patent_filed => sum => :patents_count,
 :employee => mean => :mean_employee,
@@ -364,10 +386,13 @@ extensive_counts_t3![!, :binary_own] = convert.(Int, extensive_counts_t3![!, :bi
 extensive_counts_t3![!, :cat_pat] = convert.(Union{Int, Missing}, extensive_counts_t3![!, :cat_pat])
 extensive_counts_t3!.cat_pat = categorical(extensive_counts_t3!.cat_pat, ordered = false, compress = true)
 extensive_counts_t3!.cat_pat = categorical(extensive_counts_t3!.cat_pat, ordered = true, compress = true)
+extensive_counts_t3!.id = categorical(extensive_counts_t3!.id, ordered=false, compress=true)
+extensive_counts_t3!.county = categorical(extensive_counts_t3!.county, ordered=false, compress=true)
+extensive_counts_t3!.ind4 = categorical(extensive_counts_t3!.ind4, ordered=false, compress=true)
 
 
 #All data - groups: id, ownership, patent_type, time4
-extensive_grouped_t4! = groupby(extensive_df, [:id, :ownership, :patent_type, :time4])
+extensive_grouped_t4! = groupby(extensive_df, [:id, :ownership, :patent_type, :county, :ind4, :time4])
 extensive_counts_t4! = combine(extensive_grouped_t4!,
 :patent_filed => sum => :patents_count,
 :employee => mean => :mean_employee,
@@ -378,10 +403,13 @@ extensive_counts_t4![!, :binary_own] = convert.(Int, extensive_counts_t4![!, :bi
 extensive_counts_t4![!, :cat_pat] = convert.(Union{Int, Missing}, extensive_counts_t4![!, :cat_pat])
 extensive_counts_t4!.cat_pat = categorical(extensive_counts_t4!.cat_pat, ordered = false, compress = true)
 extensive_counts_t4!.cat_pat = categorical(extensive_counts_t4!.cat_pat, ordered = true, compress = true)
+extensive_counts_t4!.id = categorical(extensive_counts_t4!.id, ordered=false, compress=true)
+extensive_counts_t4!.county = categorical(extensive_counts_t4!.county, ordered=false, compress=true)
+extensive_counts_t4!.ind4 = categorical(extensive_counts_t4!.ind4, ordered=false, compress=true)
 
 
 #All data - groups: id, ownership, patent_type, time5
-extensive_grouped_t5! = groupby(extensive_df, [:id, :ownership, :patent_type, :time5])
+extensive_grouped_t5! = groupby(extensive_df, [:id, :ownership, :patent_type, :county, :ind4, :time5])
 extensive_counts_t5! = combine(extensive_grouped_t5!,
 :patent_filed => sum => :patents_count,
 :employee => mean => :mean_employee,
@@ -392,6 +420,9 @@ extensive_counts_t5![!, :binary_own] = convert.(Int, extensive_counts_t5![!, :bi
 extensive_counts_t5![!, :cat_pat] = convert.(Union{Int, Missing}, extensive_counts_t5![!, :cat_pat])
 extensive_counts_t5!.cat_pat = categorical(extensive_counts_t5!.cat_pat, ordered = false, compress = true)
 extensive_counts_t5!.cat_pat = categorical(extensive_counts_t5!.cat_pat, ordered = true, compress = true)
+extensive_counts_t5!.id = categorical(extensive_counts_t5!.id, ordered=false, compress=true)
+extensive_counts_t5!.county = categorical(extensive_counts_t5!.county, ordered=false, compress=true)
+extensive_counts_t5!.ind4 = categorical(extensive_counts_t5!.ind4, ordered=false, compress=true)
 
 
 #Merged df with groupings 
@@ -420,8 +451,6 @@ merged_counts_2[!, :binary_own] = convert.(Int, merged_counts_2[!, :binary_own])
 
 #1.1: Ownership => Overall Patent Count (extensive_counts_1)
 glm(@formula(patents_count ~ binary_own), extensive_counts_1, Poisson(), LogLink())
-
-nlreg(extensive_counts_1, @formula(patents_count ~ binary_own), Poisson(), LogLink()) 
     
 glm(@formula(patents_count ~ binary_own + mean_output), extensive_counts_1, Poisson(), LogLink())
 
@@ -780,5 +809,3 @@ merged_df1 = filter!(row -> row.ownership != "Foreign" && row.ownership != "Coll
 merged_df)
 
 unique_values = unique(merged_df1.ownership) #Only SOE + Private firms 
-
-end # module masters_thesis
