@@ -1,4 +1,4 @@
-module masters_thesis
+module masters_thesis   
 
 using CSV
 using DataFrames
@@ -11,6 +11,8 @@ using Chain
 using GLM 
 using Econometrics
 using CategoricalArrays
+using RegressionTables
+using GLFixedEffectModels
 
 include("time_separators.jl")
 import .time_separators: time2
@@ -418,9 +420,13 @@ merged_counts_2[!, :binary_own] = convert.(Int, merged_counts_2[!, :binary_own])
 
 #1.1: Ownership => Overall Patent Count (extensive_counts_1)
 glm(@formula(patents_count ~ binary_own), extensive_counts_1, Poisson(), LogLink())
- 
+
+nlreg(extensive_counts_1, @formula(patents_count ~ binary_own), Poisson(), LogLink()) 
+    
 glm(@formula(patents_count ~ binary_own + mean_output), extensive_counts_1, Poisson(), LogLink())
- 
+
+glm(@formula(patents_count ~ binary_own + mean_employee), extensive_counts_1, Poisson(), LogLink())
+
 #1.2: Ownership => Overall Patent Count over Time w/o Controls 
 for i in groupby(extensive_counts_t2, :time2)
     result_i = glm(@formula(patents_count ~ binary_own), i, Poisson(), LogLink()) 
@@ -448,13 +454,30 @@ for i in groupby(extensive_counts_t2, :time2)
     println(result_i)
 end 
 
+for i in groupby(extensive_counts_t2, :time2)
+    result_i = glm(@formula(patents_count ~ binary_own + mean_employee), i, Poisson(), LogLink()) 
+    println(result_i)
+end 
+
+
 for i in groupby(extensive_counts_t3, :time3)
     result_i = glm(@formula(patents_count ~ binary_own + mean_output), i, Poisson(), LogLink())
     println(result_i)
 end 
 
+for i in groupby(extensive_counts_t3, :time3)
+    result_i = glm(@formula(patents_count ~ binary_own + mean_employee), i, Poisson(), LogLink())
+    println(result_i)
+end 
+
+
 for i in groupby(extensive_counts_t4, :time4)
     result_i = glm(@formula(patents_count ~ binary_own + mean_output), i, Poisson(), LogLink())
+    println(result_i)
+end 
+
+for i in groupby(extensive_counts_t4, :time4)
+    result_i = glm(@formula(patents_count ~ binary_own + mean_employee), i, Poisson(), LogLink())
     println(result_i)
 end 
 
@@ -463,15 +486,25 @@ for i in groupby(extensive_counts_t5, :time5)
     println(result_i)
 end
 
+for i in groupby(extensive_counts_t5, :time5)
+    result_i = glm(@formula(patents_count ~ binary_own + mean_employee), i, Poisson(), LogLink())
+    println(result_i)
+end
+
+
 #2.1: Ownership => Specific Patent Count
 glm(@formula(patents_count ~ binary_own), extensive_counts_2, Poisson(), LogLink())
- 
+    
 glm(@formula(patents_count ~ binary_own + mean_output), extensive_counts_2, Poisson(), LogLink())
- 
+
+glm(@formula(patents_count ~ binary_own + mean_employee), extensive_counts_2, Poisson(), LogLink())
+
 glm(@formula(patents_count ~ binary_own + binary_own*cat_pat), extensive_counts_2, Poisson(), LogLink())
- 
+
 glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_output), extensive_counts_2, Poisson(), LogLink())
- 
+    
+glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_employee), extensive_counts_2, Poisson(), LogLink())
+    
 #2.2: Ownership => Specific Patent Count over Time w/o Controls
 for i in groupby(extensive_counts_t2!, :time2)
    result_i = glm(@formula(patents_count ~ binary_own), i, Poisson(), LogLink())
