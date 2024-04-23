@@ -456,6 +456,9 @@ glm(@formula(patents_count ~ binary_own + mean_output), extensive_counts_1, Pois
 
 glm(@formula(patents_count ~ binary_own + mean_employee), extensive_counts_1, Poisson(), LogLink())
 
+glm(@formula(patents_count ~ binary_own + mean_employee + ind4), extensive_counts_1, Poisson(), LogLink())
+
+
 #1.2: Ownership => Overall Patent Count over Time w/o Controls 
 for i in groupby(extensive_counts_t2, :time2)
     result_i = glm(@formula(patents_count ~ binary_own), i, Poisson(), LogLink()) 
@@ -479,44 +482,44 @@ end
 
 #1.3 Ownership => Overall Patent Count w/ Controls 
 for i in groupby(extensive_counts_t2, :time2)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_output), i, Poisson(), LogLink()) 
+    result_i = glm(@formula(patents_count ~ binary_own + mean_output + ind4), i, Poisson(), LogLink()) 
     println(result_i)
 end 
 
 for i in groupby(extensive_counts_t2, :time2)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_employee), i, Poisson(), LogLink()) 
+    result_i = glm(@formula(patents_count ~ binary_own + mean_employee + ind4), i, Poisson(), LogLink()) 
     println(result_i)
 end 
 
 
 for i in groupby(extensive_counts_t3, :time3)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_output), i, Poisson(), LogLink())
+    result_i = glm(@formula(patents_count ~ binary_own + mean_output + ind4), i, Poisson(), LogLink())
     println(result_i)
 end 
 
 for i in groupby(extensive_counts_t3, :time3)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_employee), i, Poisson(), LogLink())
+    result_i = glm(@formula(patents_count ~ binary_own + mean_employee + ind4), i, Poisson(), LogLink())
     println(result_i)
 end 
 
 
 for i in groupby(extensive_counts_t4, :time4)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_output), i, Poisson(), LogLink())
+    result_i = glm(@formula(patents_count ~ binary_own + mean_output + ind4), i, Poisson(), LogLink())
     println(result_i)
 end 
 
 for i in groupby(extensive_counts_t4, :time4)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_employee), i, Poisson(), LogLink())
+    result_i = glm(@formula(patents_count ~ binary_own + mean_employee + ind4), i, Poisson(), LogLink())
     println(result_i)
 end 
 
 for i in groupby(extensive_counts_t5, :time5)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_output), i, Poisson(), LogLink())
+    result_i = glm(@formula(patents_count ~ binary_own + mean_output + ind4), i, Poisson(), LogLink())
     println(result_i)
 end
 
 for i in groupby(extensive_counts_t5, :time5)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_employee), i, Poisson(), LogLink())
+    result_i = glm(@formula(patents_count ~ binary_own + mean_employee + ind4), i, Poisson(), LogLink())
     println(result_i)
 end
 
@@ -533,7 +536,9 @@ glm(@formula(patents_count ~ binary_own + binary_own*cat_pat), extensive_counts_
 glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_output), extensive_counts_2, Poisson(), LogLink())
     
 glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_employee), extensive_counts_2, Poisson(), LogLink())
-    
+
+glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_employee + ind4), extensive_counts_2, Poisson(), LogLink())
+ 
 #2.2: Ownership => Specific Patent Count over Time w/o Controls
 for i in groupby(extensive_counts_t2!, :time2)
    result_i = glm(@formula(patents_count ~ binary_own), i, Poisson(), LogLink())
@@ -578,22 +583,22 @@ for i in groupby(extensive_counts_t2!, :time2)
 
  #2.4: Ownership => Specific Patent Count over Time w/ More Controls
  for i in groupby(extensive_counts_t2!, :time2)
-    result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_output), i, Poisson(), LogLink())
+    result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_employee + ind4), i, Poisson(), LogLink())
     println(result_i)
  end 
  
  for i in groupby(extensive_counts_t3!, :time3)
-     result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_output), i, Poisson(), LogLink())
+     result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_employee + ind4), i, Poisson(), LogLink())
      println(result_i)
  end 
   
  for i in groupby(extensive_counts_t4!, :time4)
-     result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_output), i, Poisson(), LogLink())
+     result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_employee + ind4), i, Poisson(), LogLink())
      println(result_i)
  end
  
  for i in groupby(extensive_counts_t5!, :time5)
-     result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_output), i, Poisson(), LogLink()) 
+     result_i = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_employee + ind4 ), i, Poisson(), LogLink()) 
      println(result_i)
  end
 
