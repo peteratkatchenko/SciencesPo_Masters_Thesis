@@ -11,7 +11,7 @@ using Econometrics
 using CategoricalArrays
 using RegressionTables
 using GLFixedEffectModels
-using RCall
+
 
 include("time_separators.jl")
 import .time_separators: time2
@@ -354,6 +354,7 @@ extensive_counts_2.id = categorical(extensive_counts_2.id, ordered=false, compre
 extensive_counts_2.county = categorical(extensive_counts_2.county, ordered=false, compress=true)
 extensive_counts_2.ind4 = categorical(extensive_counts_2.ind4, ordered=false, compress=true)
 
+CSV.write("extensive_counts_2.csv", extensive_counts_2)
 
 
 #All data - groups: id, ownership, patent_type, time2 
@@ -456,9 +457,6 @@ glm(@formula(patents_count ~ binary_own + mean_output), extensive_counts_1, Pois
 
 glm(@formula(patents_count ~ binary_own + mean_employee), extensive_counts_1, Poisson(), LogLink())
 
-glm(@formula(patents_count ~ binary_own + mean_employee + ind4), extensive_counts_1, Poisson(), LogLink())
-
-
 #1.2: Ownership => Overall Patent Count over Time w/o Controls 
 for i in groupby(extensive_counts_t2, :time2)
     result_i = glm(@formula(patents_count ~ binary_own), i, Poisson(), LogLink()) 
@@ -482,63 +480,62 @@ end
 
 #1.3 Ownership => Overall Patent Count w/ Controls 
 for i in groupby(extensive_counts_t2, :time2)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_output + ind4), i, Poisson(), LogLink()) 
+    result_i = glm(@formula(patents_count ~ binary_own + mean_output), i, Poisson(), LogLink()) 
     println(result_i)
 end 
 
 for i in groupby(extensive_counts_t2, :time2)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_employee + ind4), i, Poisson(), LogLink()) 
+    result_i = glm(@formula(patents_count ~ binary_own + mean_employee), i, Poisson(), LogLink()) 
     println(result_i)
 end 
 
 
 for i in groupby(extensive_counts_t3, :time3)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_output + ind4), i, Poisson(), LogLink())
+    result_i = glm(@formula(patents_count ~ binary_own + mean_output), i, Poisson(), LogLink())
     println(result_i)
 end 
 
 for i in groupby(extensive_counts_t3, :time3)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_employee + ind4), i, Poisson(), LogLink())
+    result_i = glm(@formula(patents_count ~ binary_own + mean_employee), i, Poisson(), LogLink())
     println(result_i)
 end 
 
 
 for i in groupby(extensive_counts_t4, :time4)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_output + ind4), i, Poisson(), LogLink())
+    result_i = glm(@formula(patents_count ~ binary_own + mean_output), i, Poisson(), LogLink())
     println(result_i)
 end 
 
 for i in groupby(extensive_counts_t4, :time4)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_employee + ind4), i, Poisson(), LogLink())
+    result_i = glm(@formula(patents_count ~ binary_own + mean_employee), i, Poisson(), LogLink())
     println(result_i)
 end 
 
 for i in groupby(extensive_counts_t5, :time5)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_output + ind4), i, Poisson(), LogLink())
+    result_i = glm(@formula(patents_count ~ binary_own + mean_output), i, Poisson(), LogLink())
     println(result_i)
 end
 
 for i in groupby(extensive_counts_t5, :time5)
-    result_i = glm(@formula(patents_count ~ binary_own + mean_employee + ind4), i, Poisson(), LogLink())
+    result_i = glm(@formula(patents_count ~ binary_own + mean_employee), i, Poisson(), LogLink())
     println(result_i)
 end
 
 
 #2.1: Ownership => Specific Patent Count
-glm(@formula(patents_count ~ binary_own), extensive_counts_2, Poisson(), LogLink())
-    
-glm(@formula(patents_count ~ binary_own + mean_output), extensive_counts_2, Poisson(), LogLink())
+model_1 = glm(@formula(patents_count ~ binary_own), extensive_counts_2, Poisson(), LogLink())
 
-glm(@formula(patents_count ~ binary_own + mean_employee), extensive_counts_2, Poisson(), LogLink())
+model_2 = glm(@formula(patents_count ~ binary_own + mean_output), extensive_counts_2, Poisson(), LogLink())
 
-glm(@formula(patents_count ~ binary_own + binary_own*cat_pat), extensive_counts_2, Poisson(), LogLink())
+model_3 = glm(@formula(patents_count ~ binary_own + mean_employee), extensive_counts_2, Poisson(), LogLink())
 
-glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_output), extensive_counts_2, Poisson(), LogLink())
-    
-glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_employee), extensive_counts_2, Poisson(), LogLink())
+model_4 = glm(@formula(patents_count ~ binary_own + binary_own*cat_pat), extensive_counts_2, Poisson(), LogLink())
 
-glm(@formula(patents_count ~ binary_own + binary_own*cat_pat + mean_employee + ind4), extensive_counts_2, Poisson(), LogLink())
- 
+model_5 = glm(@formula(patents_count ~ binary_own + mean_output + binary_own*cat_pat ), extensive_counts_2, Poisson(), LogLink())
+
+model_6 = glm(@formula(patents_count ~ binary_own + mean_employee + binary_own*cat_pat ), extensive_counts_2, Poisson(), LogLink())
+
+
 #2.2: Ownership => Specific Patent Count over Time w/o Controls
 for i in groupby(extensive_counts_t2!, :time2)
    result_i = glm(@formula(patents_count ~ binary_own), i, Poisson(), LogLink())
@@ -808,6 +805,128 @@ labelfont=font(12)
 ) #Utility patents 
 
 plot(bar_inv, bar_des, bar_uti, layout=(3), legend=false)
+
+#Quantity of Patents over Time 
+merged_df! = groupby(merged_df, :year)
+merged_df! = combine(merged_df!, nrow => :total_patents)
+year_vec = merged_df![!, :year]
+total_patents = merged_df![!, :total_patents]
+
+merged_df! = filter(row -> row.patent_type == "d", merged_df)
+merged_df! = groupby(merged_df!, :year)
+merged_df! = combine(merged_df!, nrow => :design_patents)
+design_patents = merged_df![!, :design_patents]
+
+merged_df! = filter(row -> row.patent_type == "u", merged_df)
+merged_df! = groupby(merged_df!, :year)
+merged_df! = combine(merged_df!, nrow => :utility_patents)
+utility_patents = merged_df![!, :utility_patents]
+
+merged_df! = filter(row -> row.patent_type == "i", merged_df)
+merged_df! = groupby(merged_df!, :year)
+merged_df! = combine(merged_df!, nrow => :invention_patents)
+invention_patents = merged_df![!, :invention_patents]
+
+
+p1 = plot(year_vec, [total_patents design_patents utility_patents invention_patents],
+xlabel = "Year",
+ylabel = "Quantity of Patents",
+title = "Chinese Patent Filings over Time",
+linewidth = 2,
+color = [:red :blue :green :black], 
+label = ["Total Patents" "Design Patents" "Utility Patents" "Invention Patents"],
+xticks = (1998:1:2008))
+
+savefig(p1, "plot1.png")
+
+
+merged_df!! = filter(row -> row.ownership == "SOE", merged_df)
+merged_df!! = groupby(merged_df!!, :year)
+merged_df!! = combine(merged_df!!, nrow => :total_patentSOE)
+year_vec = merged_df!![!, :year]
+total_patentSOE = merged_df!![!, :total_patentSOE]
+
+merged_df!! = filter(row -> row.patent_type == "i" && row.ownership == "SOE", merged_df)
+merged_df!! = groupby(merged_df!!, :year)
+merged_df!! = combine(merged_df!!, nrow => :invention_patentSOE)
+invention_patentSOE = merged_df!![!, :invention_patentSOE]
+
+merged_df!! = filter(row -> row.patent_type == "u" && row.ownership == "SOE", merged_df)
+merged_df!! = groupby(merged_df!!, :year)
+merged_df!! = combine(merged_df!!, nrow => :utility_patentSOE)
+utility_patentSOE = merged_df!![!, :utility_patentSOE]
+
+merged_df!! = filter(row -> row.patent_type == "d" && row.ownership == "SOE", merged_df)
+merged_df!! = groupby(merged_df!!, :year)
+merged_df!! = combine(merged_df!!, nrow => :design_patentSOE)
+design_patentSOE = merged_df!![!, :design_patentSOE]
+
+p2 = plot(year_vec, [total_patentSOE design_patentSOE utility_patentSOE invention_patentSOE],
+xlabel = "Year", 
+ylabel = "Quantity of Patents",
+title = "SOE Patent Filings over Time", 
+linewidth = 2, 
+color = [:red :blue :green :black], 
+label = ["Total Patents" "Design Patents" "Utility Patents" "Invention Patents"],
+xticks = (1998:1:2008))
+
+savefig(p2, "plot2.png")
+
+
+merged_df!!! = filter(row -> row.ownership == "Private", merged_df)
+merged_df!!! = groupby(merged_df!!!, :year)
+merged_df!!! = combine(merged_df!!!, nrow => :total_patentPRIV)
+year_vec = merged_df!!![!, :year]
+total_patentPRIV = merged_df!!![!, :total_patentPRIV]
+
+merged_df!!! = filter(row -> row.patent_type == "i" && row.ownership == "Private", merged_df)
+merged_df!!! = groupby(merged_df!!!, :year)
+merged_df!!! = combine(merged_df!!!, nrow => :invention_patentPRIV)
+invention_patentPRIV = merged_df!!![!, :invention_patentPRIV]
+
+merged_df!!! = filter(row -> row.patent_type == "u" && row.ownership == "Private", merged_df)
+merged_df!!! = groupby(merged_df!!!, :year)
+merged_df!!! = combine(merged_df!!!, nrow => :utility_patentPRIV)
+utility_patentPRIV = merged_df!!![!, :utility_patentPRIV]
+
+merged_df!!! = filter(row -> row.patent_type == "d" && row.ownership == "Private", merged_df)
+merged_df!!! = groupby(merged_df!!!, :year)
+merged_df!!! = combine(merged_df!!!, nrow => :design_patentPRIV)
+design_patentPRIV = merged_df!!![!, :design_patentPRIV]
+
+p3 = plot(year_vec, [total_patentPRIV design_patentPRIV utility_patentPRIV invention_patentPRIV],
+xlabel = "Year", 
+ylabel = "Quantity of Patents",
+title = "Private Patent Filings over Time", 
+linewidth = 2, 
+color = [:red :blue :green :black], 
+label = ["Total Patents" "Design Patents" "Utility Patents" "Invention Patents"],
+xticks = (1998:1:2008))
+
+savefig(p3, "plot3.png")
+
+p4 = plot(year_vec, [total_patents total_patentSOE total_patentPRIV],
+xlabel = "Year", 
+ylabel = "Quantity of Patents",
+title = "Total Patents by Ownership",
+linewidth = 2,
+color = [:red :blue :black], 
+label = ["Total Patents" "Total SOE Patents" "Total Priv Patents"],
+xticks = (1998:1:2008))
+
+savefig(p4, "plot4.png")
+
+p5 = plot(year_vec, [invention_patents invention_patentSOE invention_patentPRIV],
+xlabel = "Year",
+ylabel = "Quantity of Patents",
+title = "Invention Patents by Ownership",
+linewidth = 2,
+color = [:red :blue :black],
+label = ["Total Inv Patents" "SOE Inv Patents" "Priv Inv Patents"],
+xticks = (1998:1:2008))
+
+savefig(p5, "plot5.png")
+
 
 #Estimating probit/logit with binary dep. & ind. variables 
 merged_df1 = filter!(row -> row.ownership != "Foreign" && row.ownership != "Collective", 
