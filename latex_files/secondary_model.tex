@@ -1,41 +1,52 @@
+\begin{landscape}
 
-\begin{table}[!htbp] \centering 
-    \caption{} 
+
+  \begin{table}[!htbp] \centering 
+    \caption{Secondary Model w/o Fixed Effects} 
     \label{} 
   \begin{tabular}{@{\extracolsep{5pt}}lD{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} } 
   \\[-1.8ex]\hline 
   \hline \\[-1.8ex] 
    & \multicolumn{5}{c}{\textit{Dependent variable:}} \\ 
   \cline{2-6} 
-  \\[-1.8ex] & \multicolumn{5}{c}{patents\_count} \\ 
+  \\[-1.8ex] & \multicolumn{5}{c}{Total Patent Count per Type} \\ 
   \\[-1.8ex] & \multicolumn{1}{c}{(1)} & \multicolumn{1}{c}{(2)} & \multicolumn{1}{c}{(3)} & \multicolumn{1}{c}{(4)} & \multicolumn{1}{c}{(5)}\\ 
   \hline \\[-1.8ex] 
-   binary\_own & 0.927^{***} & 0.822^{***} & 0.797^{***} & 0.596^{***} & 0.596^{***} \\ 
-    & (0.003) & (0.003) & (0.003) & (0.005) & (0.005) \\ 
+   Ownership & 0.927^{***} & 0.822^{***} & 0.797^{***} & 0.194^{***} & 0.192^{***} \\ 
+    & (0.003) & (0.003) & (0.003) & (0.006) & (0.006) \\ 
     & & & & & \\ 
-   mean\_output &  & 0.00000^{***} &  &  & 0.00000^{***} \\ 
+   Mean Output &  & 0.00000^{***} &  &  & 0.00000^{***} \\ 
     &  & (0.000) &  &  & (0.000) \\ 
     & & & & & \\ 
-   mean\_employee &  &  & 0.00004^{***} & 0.00003^{***} &  \\ 
+   Mean Employee &  &  & 0.00004^{***} & 0.00003^{***} &  \\ 
     &  &  & (0.00000) & (0.00000) &  \\ 
     & & & & & \\ 
-   binary\_own:cat\_pat1 &  &  &  & -0.242^{***} & -0.133^{***} \\ 
-    &  &  &  & (0.006) & (0.006) \\ 
+   Utility Pat &  &  &  & -0.617^{***} & -0.618^{***} \\ 
+    &  &  &  & (0.005) & (0.005) \\ 
     & & & & & \\ 
-   binary\_own:cat\_pat2 &  &  &  & -0.283^{***} & -0.314^{***} \\ 
-    &  &  &  & (0.007) & (0.007) \\ 
+   Inv Pat &  &  &  & -0.572^{***} & -0.573^{***} \\ 
+    &  &  &  & (0.005) & (0.005) \\ 
     & & & & & \\ 
-   Constant & -0.872^{***} & -0.877^{***} & -0.879^{***} & 1.870^{***} & 1.875^{***} \\ 
-    & (0.002) & (0.002) & (0.002) & (0.002) & (0.002) \\ 
+   Ownership*Utility Pat &  &  &  & 0.375^{***} & 0.486^{***} \\ 
+    &  &  &  & (0.008) & (0.008) \\ 
+    & & & & & \\ 
+   Ownership*Inv Pat &  &  &  & 0.289^{***} & 0.259^{***} \\ 
+    &  &  &  & (0.008) & (0.009) \\ 
+    & & & & & \\ 
+   Constant & -0.872^{***} & -0.877^{***} & -0.879^{***} & 2.273^{***} & 2.279^{***} \\ 
+    & (0.002) & (0.002) & (0.002) & (0.003) & (0.003) \\ 
     & & & & & \\ 
   \hline \\[-1.8ex] 
   Observations & \multicolumn{1}{c}{737,265} & \multicolumn{1}{c}{736,379} & \multicolumn{1}{c}{737,265} & \multicolumn{1}{c}{50,882} & \multicolumn{1}{c}{50,757} \\ 
-  Log Likelihood & \multicolumn{1}{c}{-1,836,893.000} & \multicolumn{1}{c}{-1,736,547.000} & \multicolumn{1}{c}{-1,739,300.000} & \multicolumn{1}{c}{-733,030.300} & \multicolumn{1}{c}{-725,202.400} \\ 
-  Akaike Inf. Crit. & \multicolumn{1}{c}{3,673,789.000} & \multicolumn{1}{c}{3,473,100.000} & \multicolumn{1}{c}{3,478,607.000} & \multicolumn{1}{c}{1,466,071.000} & \multicolumn{1}{c}{1,450,415.000} \\ 
+  Log Likelihood & \multicolumn{1}{c}{-1,836,893.000} & \multicolumn{1}{c}{-1,736,547.000} & \multicolumn{1}{c}{-1,739,300.000} & \multicolumn{1}{c}{-723,069.300} & \multicolumn{1}{c}{-715,221.600} \\ 
+  Akaike Inf. Crit. & \multicolumn{1}{c}{3,673,789.000} & \multicolumn{1}{c}{3,473,100.000} & \multicolumn{1}{c}{3,478,607.000} & \multicolumn{1}{c}{1,446,153.000} & \multicolumn{1}{c}{1,430,457.000} \\ 
   \hline 
   \hline \\[-1.8ex] 
   \textit{Note:}  & \multicolumn{5}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
   \end{tabular} 
   \end{table} 
+  
+  \end{landscape}
+  
   
   
