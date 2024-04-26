@@ -11,6 +11,7 @@ using Econometrics
 using CategoricalArrays
 using RegressionTables
 using GLFixedEffectModels
+using LaTeXTables
 
 
 include("time_separators.jl")
@@ -928,18 +929,57 @@ xticks = (1998:1:2008))
 savefig(p5, "plot5.png")
 
 dfyear = groupby(df, :year)
-dfyear = combine(dfyear, nrow => :total_firms)
-total_firms = dfyear[!, :total_firms]
+dfyear = combine(dfyear, nrow => :total_firms, :employee => mean => :mean_employment, :output => (x -> mean(skipmissing(x))) => :mean_output)
+#total_firms = dfyear[!, :total_firms]
 
 dfsoe = filter(row -> row.ownership == "SOE", df)
 dfsoe = groupby(dfsoe, :year)
-dfsoe = combine(dfsoe, nrow => :total_soe)
-total_soe = dfsoe.total_soe 
+dfsoe = combine(dfsoe, nrow => :total_firms, :employee => mean => :mean_employment, :output => (x -> mean(skipmissing(x))) => :mean_output)
+#total_soe = dfsoe.total_soe 
 
 dfpriv = filter(row -> row.ownership == "Private", df)
 dfpriv = groupby(dfpriv, :year)
-dfpriv = combine(dfpriv, nrow => :total_priv)
-total_priv = dfpriv.total_priv 
+dfpriv = combine(dfpriv, nrow => :total_firms, :employee => mean => :mean_employment, :output => (x -> mean(skipmissing(x))) => :mean_output)
+#total_priv = dfpriv.total_priv 
+
+dftable = vcat(dfyear, dfsoe, dfpriv)
+dftable = filter(row -> row.year == 1998 || row.year == 2008, dftable)
+
+mgdyear = groupby(merged_df, :year)
+mgdyear = combine(mgdyear, nrow => :total_patents)
+
+mgdsoe = filter(row -> row.ownership == "SOE", merged_df)
+mgdsoe = groupby(mgdsoe, :year)
+mgdsoe = combine(mgdsoe, nrow => :total_patents)
+
+mgdpriv = filter(row -> row.ownership == "Private", merged_df)
+mgdpriv = groupby(mgdpriv, :year)
+mgdpriv = combine(mgdpriv, nrow => :total_patents)
+
+dftable2 = vcat(mgdyear, mgdsoe, mgdpriv)
+dftable2 = filter(row -> row.year == 1998 || row.year == 2008, dftable2)
+dftable = hcat(dftable, dftable2, makeunique = true)
+
+mgdyear = groupby(merged_df, :year)
+mgdyear = combine(mgdyear, :id => (x -> length(unique(x))) => :total_rdfirms)
+
+mgdsoe = filter(row -> row.ownership == "SOE", merged_df)
+mgdsoe = groupby(mgdsoe, :year)
+mgdsoe = combine(mgdsoe, :id => (x -> length(unique(x))) => :total_rdfirms)
+
+mgdpriv = filter(row -> row.ownership == "Private", merged_df)
+mgdpriv = groupby(mgdpriv, :year)
+mgdpriv = combine(mgdpriv, :id => (x -> length(unique(x))) => :total_rdfirms)
+
+dftable3 = vcat(mgdyear, mgdsoe, mgdpriv)
+dftable3 = filter(row -> row.year == 1998 || row.year == 2008, dftable3)
+dftable = hcat(dftable, dftable3, makeunique = true)
+dftable = select(dftable, :year, :total_firms, :total_rdfirms, :mean_employment, :mean_output, :total_patents)
+rename!(dftable, "year" => "Year", "total_firms" => "Total Firms", "total_rdfirms" => "Total RD Firms", 
+"mean_employment" => "Mean Employment", "mean_output" => "Mean Output", "total_patents" => "Total Patents")
+
+
+pretty_table(dftable, backend = Val(:latex), alignment = :c)
 
 
 p6 = plot(year_vec, [total_firms total_soe total_priv],
@@ -981,6 +1021,8 @@ color = [:red :black :blue],
 title = "Invention Patents per Firm over Time",
 xticks = (1998:1:2008))
 
+savefig(p8, "plot8.png")
+
 despatents_per_firm = (design_patents) ./ (total_firms)
 despatents_per_soe = (design_patentSOE) ./ (total_soe)
 despatents_per_priv = (design_patentPRIV) ./ (total_priv)
@@ -1010,16 +1052,3 @@ title = "Utility Patents per Firm over Time",
 xticks = (1998:1:2008))
 
 savefig(p10, "plot10.png")
-
-
-
-
-
-
-
-
-#Estimating probit/logit with binary dep. & ind. variables 
-merged_df1 = filter!(row -> row.ownership != "Foreign" && row.ownership != "Collective", 
-merged_df)
-
-unique_values = unique(merged_df1.ownership) #Only SOE + Private firms 
