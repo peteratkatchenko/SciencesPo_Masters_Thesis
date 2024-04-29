@@ -834,7 +834,7 @@ xlabel = "Year",
 ylabel = "Quantity of Patents",
 title = "Chinese Patent Filings over Time",
 linewidth = 2,
-color = [:red :blue :green :black], 
+color = [:black :blue :green :red], 
 label = ["Total Patents" "Design Patents" "Utility Patents" "Invention Patents"],
 xticks = (1998:1:2008))
 
@@ -867,7 +867,7 @@ xlabel = "Year",
 ylabel = "Quantity of Patents",
 title = "SOE Patent Filings over Time", 
 linewidth = 2, 
-color = [:red :blue :green :black], 
+color = [:black :blue :green :red], 
 label = ["Total Patents" "Design Patents" "Utility Patents" "Invention Patents"],
 xticks = (1998:1:2008))
 
@@ -900,7 +900,7 @@ xlabel = "Year",
 ylabel = "Quantity of Patents",
 title = "Private Patent Filings over Time", 
 linewidth = 2, 
-color = [:red :blue :green :black], 
+color = [:black :blue :green :red], 
 label = ["Total Patents" "Design Patents" "Utility Patents" "Invention Patents"],
 xticks = (1998:1:2008))
 
@@ -911,7 +911,7 @@ xlabel = "Year",
 ylabel = "Quantity of Patents",
 title = "Total Patents by Ownership",
 linewidth = 2,
-color = [:red :blue :black], 
+color = [:black :red :blue], 
 label = ["Total Patents" "Total SOE Patents" "Total Priv Patents"],
 xticks = (1998:1:2008))
 
@@ -922,7 +922,7 @@ xlabel = "Year",
 ylabel = "Quantity of Patents",
 title = "Invention Patents by Ownership",
 linewidth = 2,
-color = [:red :blue :black],
+color = [:black :red :blue],
 label = ["Total Inv Patents" "SOE Inv Patents" "Priv Inv Patents"],
 xticks = (1998:1:2008))
 
@@ -930,17 +930,17 @@ savefig(p5, "plot5.png")
 
 dfyear = groupby(df, :year)
 dfyear = combine(dfyear, nrow => :total_firms, :employee => mean => :mean_employment, :output => (x -> mean(skipmissing(x))) => :mean_output)
-#total_firms = dfyear[!, :total_firms]
+total_firms = dfyear[!, :total_firms]
 
 dfsoe = filter(row -> row.ownership == "SOE", df)
 dfsoe = groupby(dfsoe, :year)
 dfsoe = combine(dfsoe, nrow => :total_firms, :employee => mean => :mean_employment, :output => (x -> mean(skipmissing(x))) => :mean_output)
-#total_soe = dfsoe.total_soe 
+total_soe = dfsoe.total_firms 
 
 dfpriv = filter(row -> row.ownership == "Private", df)
 dfpriv = groupby(dfpriv, :year)
 dfpriv = combine(dfpriv, nrow => :total_firms, :employee => mean => :mean_employment, :output => (x -> mean(skipmissing(x))) => :mean_output)
-#total_priv = dfpriv.total_priv 
+total_priv = dfpriv.total_firms
 
 dftable = vcat(dfyear, dfsoe, dfpriv)
 dftable = filter(row -> row.year == 1998 || row.year == 2008, dftable)
@@ -987,7 +987,7 @@ xlabel = "Year",
 ylabel = "Quantity of Firms",
 label = ["Total Firms" "Total SOEs" "Total Private"],
 linewidth = 2, 
-color = [:red :black :blue],
+color = [:black :red :blue],
 title = "Quantity of Firms over Time",
 xticks = (1998:1:2008))
 
@@ -1002,7 +1002,7 @@ xlabel = "Year",
 ylabel = "Patents per Firm",
 label = ["Patents/Firm" "SOE Patents/SOE" "Priv Patents/Priv"],
 linewidth = 2, 
-color = [:red :black :blue],
+color = [:black :red :blue],
 title = "Patents per Firm over Time",
 xticks = (1998:1:2008))
 
@@ -1017,7 +1017,7 @@ xlabel = "Year",
 ylabel = "Invention Patents per Firm",
 label = ["Inv Patents/Firm" "SOE Inv Patents/SOE" "Priv Inv Patents/Priv"],
 linewidth = 2, 
-color = [:red :black :blue],
+color = [:black :red :blue],
 title = "Invention Patents per Firm over Time",
 xticks = (1998:1:2008))
 
@@ -1032,7 +1032,7 @@ xlabel = "Year",
 ylabel = "Design Patents per Firm", 
 label = ["Des Patents/Firm" "SOE Des Patents/SOE" "Priv Des Patents/Priv"],
 linewidth = 2, 
-color = [:red :black :blue],
+color = [:black :red :blue],
 title = "Design Patents per Firm over Time", 
 xticks = (1998:1:2008))
 
@@ -1047,7 +1047,7 @@ xlabel = "Year",
 ylabel = "Utility Patents per Firm", 
 label = ["Uti Patents/Firm" "SOE Uti Patents/SOE" "Priv Uti Patents/Priv"],
 linewidth = 2, 
-color = [:red :black :blue],
+color = [:black :red :blue],
 title = "Utility Patents per Firm over Time", 
 xticks = (1998:1:2008))
 
