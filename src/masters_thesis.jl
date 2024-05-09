@@ -12,6 +12,8 @@ using CategoricalArrays
 using RegressionTables
 using GLFixedEffectModels
 using LaTeXTables
+using LatexPrint
+
 
 
 include("time_separators.jl")
@@ -264,6 +266,9 @@ didnt_file[!, :grant_date] = missings(nrow(didnt_file))
 
 extensive_df = vcat(merged_df, didnt_file) #2,934,441x39
 CSV.write("extensive_df.csv", extensive_df)
+
+extdf_head = select(extensive_df, :id, :year, :ownership, :ind4, :county, :output, :employee, :patent_type)
+extdf_head = first(extdf_head, 5)
 
 #Deleting the Collective + Foreign firms 
 extensive_df = filter(row -> (row.ownership == "SOE" || row.ownership == "Private"), 
