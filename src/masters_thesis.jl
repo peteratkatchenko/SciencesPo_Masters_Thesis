@@ -451,7 +451,7 @@ merged_counts_2 = combine(merged_grouped_2,
 :cat_pat => mean => :cat_pat)
 merged_counts_2[!, :binary_own] = convert.(Int, merged_counts_2[!, :binary_own])
 
-#=
+
 #########################################
 # GLM with Extensive Margin + Merged Data
 #########################################
@@ -743,7 +743,7 @@ for i in groupby(merged_df, :time5)
     result_i = fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df) 
     println(result_i)
 end
-=#
+
 
 ###########
 #Bar Graphs
@@ -1174,7 +1174,7 @@ savefig(figure_5, "figure_5.png")
 ##################
 #Descriptive Table
 ##################
-#=
+
 dftable = vcat(dfyear, dfsoe, dfpriv)
 dftable = filter(row -> row.year == 1998 || row.year == 2008, dftable)
 
@@ -1212,4 +1212,3 @@ rename!(dftable, "year" => "Year", "total_firms" => "Total Firms", "total_rdfirm
 "mean_employment" => "Mean Employment", "mean_output" => "Mean Output", "total_patents" => "Total Patents")
 
 pretty_table(dftable, backend = Val(:latex), alignment = :c)
-=#
