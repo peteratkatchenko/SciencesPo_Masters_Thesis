@@ -14,14 +14,11 @@ using GLFixedEffectModels
 using LaTeXTables
 using LatexPrint
 
-
-
 include("time_separators.jl")
 import .time_separators: time2
 import .time_separators: time3 
 import .time_separators: time4 
 import .time_separators: time5
-
 
 # Generate a dataframe for each of the datasets needed for the analysis
 # df: CIE data with firm identifiers and firm types
@@ -263,9 +260,7 @@ didnt_file[!, :state_province_code] = missings(nrow(didnt_file))
 didnt_file[!, :application_no] = missings(nrow(didnt_file))
 didnt_file[!, :grant_date] = missings(nrow(didnt_file))
 
-
 extensive_df = vcat(merged_df, didnt_file) #2,934,441x39
-CSV.write("extensive_df.csv", extensive_df)
 
 extdf_head = select(extensive_df, :id, :year, :ownership, :ind4, :county, :output, :employee, :patent_type)
 extdf_head = first(extdf_head, 5)
@@ -273,6 +268,24 @@ extdf_head = first(extdf_head, 5)
 #Deleting the Collective + Foreign firms 
 extensive_df = filter(row -> (row.ownership == "SOE" || row.ownership == "Private"), 
 extensive_df)
+
+extensive_df = filter(row -> !ismissing(row.employee),  extensive_df)
+
+extensive_df = filter(row -> !ismissing(row.output), extensive_df)
+
+extensive_df.employee .= ifelse.(extensive_df.employee .== 0, 0.00000000001, extensive_df.employee)
+
+extensive_df.output .= ifelse.(extensive_df.output .== 0, 0.00000000001, extensive_df.employee)
+
+transform!(extensive_df, :employee => (x -> log.(x)) => :employee)
+
+transform!(extensive_df, :output => (x -> log.(x)) => :output)
+
+#extensive_df = filter(row -> row.employee !== -Inf, extensive_df)
+
+#extensive_df = filter(row -> row.output !== -Inf, extensive_df)
+
+CSV.write("extensive_df.csv", extensive_df)
 
 #All data - groups: id, ownership
 extensive_grouped_1 = groupby(extensive_df, [:id, :ownership, :county, :ind4])
@@ -431,7 +444,6 @@ extensive_counts_t5!.id = categorical(extensive_counts_t5!.id, ordered=false, co
 extensive_counts_t5!.county = categorical(extensive_counts_t5!.county, ordered=false, compress=true)
 extensive_counts_t5!.ind4 = categorical(extensive_counts_t5!.ind4, ordered=false, compress=true)
 
-
 #Merged df with groupings 
 merged_grouped_1 = groupby(merged_df, [:id, :ownership])
 merged_counts_1 = combine(merged_grouped_1,
@@ -451,18 +463,18 @@ merged_counts_2 = combine(merged_grouped_2,
 :cat_pat => mean => :cat_pat)
 merged_counts_2[!, :binary_own] = convert.(Int, merged_counts_2[!, :binary_own])
 
-
+#=
 #########################################
 # GLM with Extensive Margin + Merged Data
 #########################################
 
 #1.1: Ownership => Overall Patent Count (extensive_counts_1)
 glm(@formula(patents_count ~ binary_own), extensive_counts_1, Poisson(), LogLink())
-    
+ 
 glm(@formula(patents_count ~ binary_own + mean_output), extensive_counts_1, Poisson(), LogLink())
-
+ 
 glm(@formula(patents_count ~ binary_own + mean_employee), extensive_counts_1, Poisson(), LogLink())
-
+ 
 #1.2: Ownership => Overall Patent Count over Time w/o Controls 
 for i in groupby(extensive_counts_t2, :time2)
     result_i = glm(@formula(patents_count ~ binary_own), i, Poisson(), LogLink()) 
@@ -743,7 +755,7 @@ for i in groupby(merged_df, :time5)
     result_i = fit(EconometricModel, @formula(patent_type ~ binary_own + output), merged_df) 
     println(result_i)
 end
-
+=#
 
 ###########
 #Bar Graphs
@@ -833,31 +845,31 @@ totalpriv = combine(dfprivyear, nrow => :total_priv, :employee => mean => :mean_
 total_priv = totalpriv.total_priv
 
 p1 = plot(year_vec, [total_firms total_soe total_priv],
-xlabel = "Year", 
+xlabel = "Year", ylabel="Number of Firms (x10⁵)",
 xlabelfontsize=8, ylabelfontsize=8, titlefontsize=10,
 legendfontsize=6,
 label = ["Both" "SOE" "DPE"],
 linewidth = 2, 
 color = [:black :red :blue],
-title = "a. Total Quantity of Firms",
-xticks = (1998:2:2008))
+title = "a.", titlelocation=:left,
+xticks = (1998:2:2008), yticks=(100000:100000:400000, [1, 2, 3, 4]))
 
-savefig(p1, "plot1.png")
+savefig(p1, "plot1.pdf")
 
 rel_soe = (total_soe) ./ (total_firms)
 rel_priv = (total_priv) ./ (total_firms)
 
 p2 = plot(year_vec, [rel_soe rel_priv],
-xlabel = "Year",
+xlabel = "Year", ylabel="Number of firms/total",
 xlabelfontsize=8, ylabelfontsize=8, titlefontsize=10, 
 legendfontsize=6,
 label = ["SOE/Total" "Priv/Total"],
 linewidth = 2,
 color = [:red :blue],
-title = "a. Firm Quantity Relative to Total",
+title = "a.", titlelocation=:left,
 xticks = (1998:2:2008))
 
-savefig(p2, "plot2.png")
+savefig(p2, "plot2.pdf")
 
 totaloutput = combine(df_year, :output => (x -> sum(skipmissing(x))) => :total_output)
 total_output = totaloutput.total_output
@@ -869,47 +881,47 @@ totaloutsoe = combine(dfsoeyear, :output => (x -> sum(skipmissing(x))) => :total
 total_outsoe = totaloutsoe.total_outsoe
 
 p3 = plot(year_vec, [total_output total_outsoe total_outpriv],
-xlabel = "Year",
+xlabel = "Year", ylabel="Output (USD) (x10¹⁰)", 
 xlabelfontsize=8, ylabelfontsize=8, titlefontsize=10,
 legendfontsize=6,
 label = ["Both" "SOE" "DPE"],
 linewidth = 2, 
 color = [:black :red :blue],
-title = "b. Total Output",
-xticks = (1998:2:2008))
+title = "b.", titlelocation=:left,
+xticks = (1998:2:2008), yticks=(10000000000:10000000000:50000000000, [1, 2, 3, 4, 5]))
 
-savefig(p3, "plot3.png")
+savefig(p3, "plot3.pdf")
 
 rel_soe_output = (total_outsoe) ./ (total_output)
 rel_priv_output = (total_outpriv) ./ (total_output)
 
 p4 = plot(year_vec, [rel_soe_output rel_priv_output],
-xlabel = "Year",
+xlabel = "Year", ylabel="Output (USD)/total",
 xlabelfontsize=8, ylabelfontsize=8, titlefontsize=10, 
 legendfontsize=6,
 label = ["SOE/Total" "DPE/Total"],
 linewidth = 2, 
 color = [:red :blue],
-title = "b. Output Relative to Total",
+title = "b.", titlelocation=:left,
 xticks = (1998:2:2008))
 
-savefig(p4, "plot4.png")
+savefig(p4, "plot4.pdf")
 
 output_per_firm = (total_output) ./ (total_firms)
 output_per_soe = (total_outsoe) ./ (total_soe)
 output_per_priv = (total_outpriv) ./ (total_priv)
 
 p5 = plot(year_vec, [output_per_firm output_per_soe output_per_priv], 
-xlabel = "Year",
+xlabel = "Year", ylabel="Output (USD)/num. of firms (x10⁵)",
 xlabelfontsize=8, ylabelfontsize=8, titlefontsize=10,
 legendfontsize=6,
 label = ["Total Out/Firm" "SOE Out/SOE" "Priv Out/Priv"],
 linewidth = 2, color = [:black :red :blue], 
-title = "c. Output per Firm (Hundred Thousands)", 
+title = "c.", titlelocation=:left,
 xticks = (1998:2:2008),
-yticks = (100000:100000:600000, [1, 2, 3, 4, 5, 6]))
+yticks = (100000:100000:600000, [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]))
 
-savefig(p5, "plot5.png")
+savefig(p5, "plot5.pdf")
 
 totalemployees = combine(df_year, :employee => sum => :total_employees)
 total_employees = totalemployees.total_employees
@@ -921,47 +933,47 @@ totalemplpriv = combine(dfprivyear, :employee => sum => :total_emplpriv)
 total_emplpriv = totalemplpriv.total_emplpriv
 
 p6 = plot(year_vec, [total_employees total_emplsoe total_emplpriv],
-xlabel = "Year", 
+xlabel = "Year", ylabel="Number of employees (x10⁷)", 
 xlabelfontsize=8, ylabelfontsize=8, titlefontsize=10, 
 legendfontsize=6,
 label = ["Both" "SOE" "DPE"],
 linewidth = 2, 
 color = [:black :red :blue],
-title = "c. Total Employment",
-xticks = (1998:2:2008))
+title = "c.", titlelocation=:left,
+xticks = (1998:2:2008), yticks=(20000000:20000000:80000000, [2, 4, 6, 8]))
 
-savefig(p6, "plot6.png")
+savefig(p6, "plot6.pdf")
 
 rel_soe_empl = (total_emplsoe) ./ (total_employees)
 rel_priv_empl = (total_emplpriv) ./ (total_employees)
 
 p7 = plot(year_vec, [rel_soe_empl rel_priv_empl],
-xlabel = "Year", 
+xlabel = "Year", ylabel="Number of employees/total",
 xlabelfontsize=8, ylabelfontsize=8, titlefontsize=10, 
 legendfontsize=6,
 label = ["SOE/Total" "DPE/Total"],
 linewidth = 2, 
 color = [:red :blue],
-title = "c. Employment Relative to Total", 
+title = "c.", titlelocation=:left,
 xticks = (1998:2:2008))
 
-savefig(p7, "plot7.png")
+savefig(p7, "plot7.pdf")
 
 empl_per_firm = (total_employees) ./ (total_firms)
 empl_per_soe = (total_emplsoe) ./ (total_soe)
 empl_per_priv = (total_emplpriv) ./ (total_priv)
 
 p8 = plot(year_vec, [empl_per_firm empl_per_soe empl_per_priv], 
-xlabel = "Year",  
+xlabel = "Year", ylabel="Num. of empl./num. of firms",
 xlabelfontsize=8, ylabelfontsize=8, titlefontsize=10,
 legendfontsize=6,
 label = ["Empl/Firm" "SOE Empl/SOE" "Priv Empl/Priv"],
 linewidth = 2, color = [:black :red :blue], 
-title = "a. Employment per Firm (Hundreds)", 
+title = "a.", titlelocation=:left,
 xticks = (1998:2:2008),
-yticks = (200:100:800, [2, 3, 4, 5, 6, 7, 8]))
+yticks = (200:100:800, [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]))
 
-savefig(p8, "plot8.png")
+savefig(p8, "plot8.pdf")
 
 mgdyear = groupby(merged_df, :year)
 totalpatents = combine(mgdyear, nrow => :total_patents)
@@ -978,47 +990,47 @@ totalpatentpriv = combine(mgdprivyear, nrow => :total_patentpriv)
 total_patentpriv = totalpatentpriv.total_patentpriv
 
 p9 = plot(year_vec, [total_patents total_patentsoe total_patentpriv],
-xlabel = "Year", 
+xlabel = "Year", ylabel="Number of patents (x10⁵)",
 xlabelfontsize=8, ylabelfontsize=8, titlefontsize=10,
 legendfontsize=6,
-title = "d. Total Patents",
+title = "d.", titlelocation=:left,
 linewidth = 2,
 color = [:black :red :blue], 
 label = ["Both" "SOE" "DPE"],
-xticks = (1998:2:2008))
+xticks = (1998:2:2008), yticks=(50000:50000:150000, [0.5, 1, 1.5]))
 
-savefig(p9, "plot9.png")
+savefig(p9, "plot9.pdf")
 
 rel_soe_patents = (total_patentsoe) ./ (total_patents)
 rel_priv_patents = (total_patentpriv) ./ (total_patents)
 
 p10 = plot(year_vec, [rel_soe_patents rel_priv_patents],
-xlabel = "Year", 
+xlabel = "Year", ylabel="Number of patents/total",
 xlabelfontsize=8, ylabelfontsize=8, titlefontsize=10, 
 legendfontsize=6,
-title = "d. Patent Count Relative to Total",
+title = "d.", titlelocation=:left,
 linewidth = 2, 
 color = [:red :blue], 
 label = ["SOE/Total" "DPE/Total"],
 xticks = (1998:2:2008))
 
-savefig(p10, "plot10.png")
+savefig(p10, "plot10.pdf")
 
 patents_per_firm = (total_patents) ./ (total_firms)
 patents_per_soe = (total_patentsoe) ./ (total_soe)
 patents_per_priv = (total_patentpriv) ./ (total_priv)
 
 p11 = plot(year_vec, [patents_per_firm patents_per_soe patents_per_priv],
-xlabel = "Year",
+xlabel = "Year", ylabel="Num. of patents/num. of firms",
 xlabelfontsize=8, ylabelfontsize=8, titlefontsize=10,
 legendfontsize=6,
 label = ["Pat/Firm" "SOE Pat/SOE" "Priv Pat/Priv"],
 linewidth = 2, 
 color = [:black :red :blue],
-title = "e. Patents per Firm",
+title = "e.", titlelocation=:left,
 xticks = (1998:2:2008))
 
-savefig(p11, "plot11.png")
+savefig(p11, "plot11.pdf")
 
 mgdinv = filter(row -> row.patent_type == "i", merged_df)
 mgdinvyear = groupby(mgdinv, :year)
@@ -1040,15 +1052,15 @@ invpatents_per_soe = (inv_patentsoe) ./ (total_soe)
 invpatents_per_priv = (inv_patentpriv) ./ (total_priv)
 
 p12 = plot(year_vec, [invpatents_per_firm invpatents_per_soe invpatents_per_priv],
-xlabel = "Year", titlefontsize=10, xlabelfontsize=8,
-legendfontsize=6, 
+xlabel = "Year", titlefontsize=10, xlabelfontsize=8, ylabelfontsize=8,
+legendfontsize=6, ylabel="Num. of inv. patents/num. of firms",
 label = ["Inv/Firm" "SOE Inv/SOE" "Priv Inv/Priv"],
 linewidth = 2, 
 color = [:black :red :blue],
-title = "b. Invention Patents per Firm",
+title = "b.", titlelocation=:left,
 xticks = (1998:2:2008))
 
-savefig(p12, "plot12.png")
+savefig(p12, "plot12.pdf")
 
 mgduti = filter(row -> row.patent_type == "u", merged_df)
 mgdutiyear = groupby(mgduti, :year)
@@ -1070,15 +1082,15 @@ utipatents_per_soe = (uti_patentsoe) ./ (total_soe)
 utipatents_per_priv = (uti_patentpriv) ./ (total_priv)
 
 p13 = plot(year_vec, [utipatents_per_firm utipatents_per_soe utipatents_per_priv],
-xlabel = "Year", xlabelfontsize=8, titlefontsize=10,
-legendfontsize=6,
+xlabel = "Year", xlabelfontsize=8, titlefontsize=10, ylabelfontsize=8, 
+legendfontsize=6, ylabel="Num. of uti. patents/num. of firms",
 label = ["Uti/Firm" "SOE Uti/SOE" "Priv Uti/Priv"],
 linewidth = 2, 
 color = [:black :red :blue],
-title = "d. Utility Patents per Firm", 
+title = "d.", titlelocation=:left,
 xticks = (1998:2:2008))
 
-savefig(p13, "plot13.png")
+savefig(p13, "plot13.pdf")
 
 mgddes = filter(row -> row.patent_type == "d", merged_df)
 mgddesyear = groupby(mgddes, :year)
@@ -1100,77 +1112,79 @@ despatents_per_soe = (des_patentsoe) ./ (total_soe)
 despatents_per_priv = (des_patentpriv) ./ (total_priv)
 
 p14 = plot(year_vec, [despatents_per_firm despatents_per_soe despatents_per_priv],
-xlabel = "Year", xlabelfontsize=8, titlefontsize=10,
-legendfontsize=6, 
+xlabel = "Year", xlabelfontsize=8, titlefontsize=10, ylabelfontsize=8,
+legendfontsize=6, ylabel="Num. of des. patents/num. of firms",
 label = ["Des/Firm" "SOE Des/SOE" "Priv Des/Priv"],
 linewidth = 2, 
 color = [:black :red :blue],
-title = "f. Design Patents per Firm", 
+title = "f.", titlelocation=:left,
 xticks = (1998:2:2008))
 
-savefig(p14, "plot14.png")
+savefig(p14, "plot14.pdf")
 
 
 p15 = plot(year_vec, [total_patents des_patents uti_patents inv_patents],
 xlabel = "Year",
 ylabel = "Total Patent Quantity",
-title = "Total Quantity of Patents",
+title = "Total number of patents",
 linewidth = 2,
 color = [:black :green :blue :red], 
 label = ["Total Patents" "Total Design Patents" "Total Utility Patents" "Total Invention Patents"],
 xticks = (1998:1:2008))
 
-savefig(p15, "plot15.png")
+savefig(p15, "plot15.pdf")
 
 p16 = plot(year_vec, [total_patentsoe des_patentsoe uti_patentsoe inv_patentsoe],
 xlabel = "Year", 
 ylabel = "Patent Quantity",
-title = "SOE Patents by Type", 
+title = "SOE patents by type", 
 linewidth = 2, 
 color = [:black :green :blue :red], 
 label = ["Total Patents" "Design Patents" "Utility Patents" "Invention Patents"],
 xticks = (1998:1:2008))
 
-savefig(p16, "plot16.png")
+savefig(p16, "plot16.pdf")
 
 p17 = plot(year_vec, [total_patentpriv des_patentpriv uti_patentpriv inv_patentpriv],
 xlabel = "Year", 
 ylabel = "Patent Quantity",
-title = "Private Patents by Type", 
+title = "Private patents by type", 
 linewidth = 2, 
 color = [:black :green :blue :red], 
 label = ["Total Patents" "Design Patents" "Utility Patents" "Invention Patents"],
 xticks = (1998:1:2008))
 
-savefig(p17, "plot17.png")
+savefig(p17, "plot17.pdf")
 
 p18 = plot(year_vec, [inv_patents inv_patentsoe inv_patentpriv],
 xlabel = "Year",
 ylabel = "Patent Quantity",
-title = "Invention Patents by Ownership",
+title = "Invention patents by ownership",
 linewidth = 2,
 color = [:black :red :blue],
 label = ["Total Inv Patents" "SOE Inv Patents" "Priv Inv Patents"],
 xticks = (1998:1:2008))
 
-savefig(p18, "plot18.png")
+savefig(p18, "plot18.pdf")
 
 figure_1 = plot(p1, p3, p6, p9, layout=(2,2))
-savefig(figure_1, "figure_1.png")
+savefig(figure_1, "figure_1.pdf")   
 
 figure_2 = plot(p2, p4, p7, p10, layout=(2,2))
-savefig(figure_2, "figure_2.png")
+savefig(figure_2, "figure_2.pdf")   
 
-figure_3 = plot(p8, p5, p11, layout=(3,1), size=(450,700))
-savefig(figure_3, "figure_3.png")
+figure_3 = plot(p8, p12, p5, p13, p11, p14, layout=(3,2), size=(700,800))
+savefig(figure_3, "figure_3.pdf")
 
 figure_4 = plot(p12, p13, p14, layout=(3,1), size=(450,700))
-savefig(figure_4, "figure_4.png")
+savefig(figure_4, "figure_4.pdf")
 
-figure_5 = plot(p8, p12, p5, p13, p11, p14, layout=(3,2), size=(600,800))
-savefig(figure_5, "figure_5.png")
+figure_5 = plot(p8, p5, p11, layout=(3,1), size=(450,700))
+savefig(figure_5, "figure_5.pdf")
 
 
+
+#=
 ##################
 #Descriptive Table
 ##################
@@ -1212,3 +1226,4 @@ rename!(dftable, "year" => "Year", "total_firms" => "Total Firms", "total_rdfirm
 "mean_employment" => "Mean Employment", "mean_output" => "Mean Output", "total_patents" => "Total Patents")
 
 pretty_table(dftable, backend = Val(:latex), alignment = :c)
+=#
